@@ -1,0 +1,24 @@
+[package]
+name = "benches"
+description = "Performance testing for Lumine HTTP web server."
+repository = "https://github.com/Ellen-desu/lumine"
+version = "0.0.0"
+publish = false
+edition = "2024"
+license = "MIT"
+
+[dependencies]
+lumine = { version = "0.1.0", path = "../lumine", features = ["bench"] }
+criterion = "0.8"
+ureq = "3"
+rand = "0.9"
+
+[[bench]]
+name = "hello_world"
+path = "hello_world.rs"
+harness = false
+
+[[bench]]
+name = "routing"
+path = "routing.rs"
+harness = false

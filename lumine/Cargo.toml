@@ -1,0 +1,24 @@
+[package]
+name = "lumine"
+description = "A simple and minimal HTTP web server."
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/Ellen-desu/lumine"
+categories = ["web-programming::http-server", "web-programming", "network-programming"]
+keywords = ["http", "web-server", "sync", "network", "lightweight"]
+
+[dependencies]
+http = "1"
+threadpool = "1"
+thiserror = "2"
+chrono = { version = "0", default-features = false, features = ["now"] }
+
+[dev-dependencies]
+ureq = "3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[features]
+bench = []
