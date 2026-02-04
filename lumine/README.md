@@ -127,4 +127,4 @@ Breaking changes may occur as the API evolves.
 
 ## License
 
-This project is licensed under the [MIT License.](https://github.com/Ellen-desu/lumine/LICENSE)
+This project is licensed under the [MIT License.](https://github.com/Ellen-desu/lumine/blob/main/LICENSE)
