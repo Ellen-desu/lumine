@@ -199,16 +199,11 @@ impl Lumine<Ready> {
         let mut query = Query::default();
 
         if let Some(raw_query) = uri.query() {
-            // Separate each query params and take or ignore it if the value is empty
-            for pair in raw_query.split("&") {
-                let (k, v) = match pair.split_once("=") {
-                    Some(p) => p,
-                    _ => (pair, ""),
-                };
-
-                if !v.is_empty() {
-                    query.entry(k.to_string()).or_default().push(v.to_string());
-                };
+            for (key, value) in form_urlencoded::parse(raw_query.as_bytes()).into_owned() {
+                query
+                    .entry(key.to_string())
+                    .or_default()
+                    .push(value.to_string());
             }
         }
 
