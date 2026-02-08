@@ -111,8 +111,8 @@ No async runtime, no hidden magic.
 
 ## Development Plan
 
-* Write complete documentation (API reference + guides)
-* Optional asynchronous runtime support (without breaking sync-first design)
+* Add more tests, especially for error handling
+* Add more features (e.g. middleware)
 
 ---
 
