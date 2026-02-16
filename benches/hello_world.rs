@@ -8,7 +8,7 @@ fn benchmark(c: &mut Criterion) {
 
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
 
-    let _errors = app.serve(listener);
+    let _rx = app.serve(listener);
 
     c.bench_function("hello_world", |b| {
         b.iter(|| black_box(ureq::get("http://127.0.0.1:8080").call().unwrap()))

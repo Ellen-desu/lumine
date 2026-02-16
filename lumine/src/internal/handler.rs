@@ -1,6 +1,6 @@
 use crate::{
-    application::{lumine::Lumine, states::Ready},
-    services::parser,
+    application::{client::Client, lumine::Lumine, states::Ready},
+    internal::parser,
     types::{body::Body, request::Request, response::Response, result::Result},
 };
 use chrono::Utc;
@@ -11,14 +11,25 @@ use http::{
 use std::{
     io::{BufRead, BufReader, BufWriter, Write},
     net::TcpStream,
-    sync::Arc,
+    panic::{self, AssertUnwindSafe},
+    sync::{Arc, mpsc::Sender},
 };
 
-pub(crate) fn handle_client(app: Arc<Lumine<Ready>>, stream: TcpStream) -> Result<()> {
-    let request = read_request(&stream);
+pub(crate) fn handle_client(
+    app: Arc<Lumine<Ready>>,
+    stream: TcpStream,
+    tx: Arc<Sender<Client<Ready>>>,
+) -> Result<()> {
+    let mut client = Client::builder();
+    let request_result = read_request(&stream);
 
-    let mut response = match request {
-        Ok(Some(req)) => handle_request(req, &app)?,
+    let mut response = match request_result {
+        Ok(Some(req)) => {
+            client = client.method(req.method().clone());
+            client = client.url(req.uri().clone());
+
+            handle_request(req, &app)?
+        }
         // Client disconected
         Ok(None) => return Ok(()),
         _ => http::Response::builder()
@@ -26,24 +37,34 @@ pub(crate) fn handle_client(app: Arc<Lumine<Ready>>, stream: TcpStream) -> Resul
             .body(Body::default())?,
     };
 
+    client = client.status(response.status());
+    let _ = tx.send(client.build());
+
     set_default_header(&mut response)?;
 
-    write_response(response, &stream)
+    write_response(response, &stream)?;
+
+    Ok(())
 }
 
-fn handle_request(mut req: Request, app: &Arc<Lumine<Ready>>) -> Result<Response> {
-    let response = match app.get_route(req.uri()) {
+fn handle_request(mut request: Request, app: &Arc<Lumine<Ready>>) -> Result<Response> {
+    let response = match app.get_route(request.uri()) {
         Some((route, params, query)) => {
-            if req.body().len() > app.max_body() {
+            if request.body().len() > app.max_body() {
                 http::Response::builder()
                     .status(StatusCode::PAYLOAD_TOO_LARGE)
                     .body(Body::default())?
             } else {
-                let ext = req.extensions_mut();
+                let ext = request.extensions_mut();
                 ext.insert(params);
                 ext.insert(query);
 
-                route.call(req)?
+                match panic::catch_unwind(AssertUnwindSafe(|| route.call(request).unwrap())) {
+                    Ok(response) => response,
+                    _ => http::Response::builder()
+                        .status(StatusCode::INTERNAL_SERVER_ERROR)
+                        .body(Body::default())?,
+                }
             }
         }
         _ => http::Response::builder()

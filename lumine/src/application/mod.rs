@@ -1,27 +1,39 @@
-//! Application core and state system.
+//! Application core and type-state system.
 //!
-//! This module defines [`Lumine`], the main HTTP application structure,
-//! along with its compile-time state system.
+//! This module defines the core structures of Lumine, including:
 //!
-//! ## Application Lifecycle
+//! - [`Lumine`], the main HTTP application entry point
+//! - [`Client`], the request/client context returned once the server is ready
+//! - The compile-time state system used to enforce correct lifecycle usage
 //!
-//! Lumine uses a **type-state pattern** to represent the application
-//! lifecycle at compile time. Instead of tracking state at runtime,
-//! the application state is encoded in the type system.
+//! ---
 //!
-//! The lifecycle consists of two primary states:
+//! ## Type-State Pattern
+//!
+//! Lumine uses a **type-state pattern** to represent lifecycle phases
+//! at compile time.
+//!
+//! Instead of tracking states through runtime flags or booleans,
+//! Lumine encodes state directly into the type system using generics.
+//!
+//! This means invalid operations are rejected by the compiler,
+//! not discovered later at runtime.
+//!
+//! ---
+//!
+//! ## Core Lifecycle States
+//!
+//! Lumine defines two primary marker states:
 //!
 //! - [`Builder`] — configuration phase
-//!   Routes and server settings can be added or modified.
+//!   Routes, middleware, and server settings may still be modified.
 //!
 //! - [`Ready`] — runtime phase
-//!   Configuration is finalized and the application can be served.
+//!   Configuration is finalized and the server is safe to serve requests.
 //!
-//! This design ensures that invalid operations (such as modifying routes
-//! after the server has started) are prevented at compile time rather than
-//! at runtime.
+//! ---
 //!
-//! ## State Transitions
+//! ## Application Lifecycle (`Lumine`)
 //!
 //! A new application always starts in the [`Builder`] state:
 //!
@@ -32,7 +44,7 @@
 //! ```
 //!
 //! Calling [`Lumine::build`] finalizes the configuration and transitions
-//! the application into the [`Ready`] state:
+//! into the [`Ready`] state:
 //!
 //! ```rust
 //! use lumine::Lumine;
@@ -44,19 +56,39 @@
 //!
 //! Only applications in the [`Ready`] state can be served.
 //!
+//! ---
+//!
+//! ## Client Lifecycle (`Client`)
+//!
+//! Lumine also applies the same type-state concept to request/client metadata.
+//!
+//! A [`Client`] begins in a [`Builder`] state while request information
+//! is still being assembled internally.
+//!
+//! Once ready, it transitions into [`Client<Ready>`], where metadata becomes
+//! immutable and can be safely accessed through getter methods.
+//!
+//! This ensures request context cannot be mutated once the server begins
+//! handling it.
+//!
+//! ---
+//!
 //! ## Design Rationale
 //!
-//! By encoding the application lifecycle in the type system, Lumine provides:
+//! By encoding lifecycle phases into the type system, Lumine provides:
 //!
 //! - Clear separation between configuration and runtime phases
 //! - Compile-time guarantees about correct API usage
-//! - A simpler and more predictable mental model for users
+//! - A predictable and ergonomic mental model
+//! - Zero runtime overhead (thanks to marker types + `PhantomData`)
 //!
-//! Internally, marker types and `PhantomData` are used to associate
-//! state information without introducing runtime overhead.
+//! Internally, Lumine uses marker types and `PhantomData` to associate
+//! state information without affecting performance.
 
+pub mod client;
 pub mod lumine;
 pub mod states;
 
+pub use client::Client;
 pub use lumine::Lumine;
 pub use states::{Builder, Ready};

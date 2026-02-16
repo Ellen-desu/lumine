@@ -1,10 +1,12 @@
 use crate::{
-    application::states::{Builder, Ready},
-    error::Error,
+    application::{
+        client::Client,
+        states::{Builder, Ready},
+    },
+    internal::handler,
     routing::{params::Params, path::Path, query::Query, route::Route},
-    services::handler,
     traits::into_response::IntoResponse,
-    types::{request::Request, result::Result, route::RouteType},
+    types::{request::Request, route::RouteType},
 };
 use http::Uri;
 use std::{
@@ -15,6 +17,7 @@ use std::{
         mpsc::{self, Receiver},
     },
     thread,
+    time::Duration,
 };
 use threadpool::ThreadPool;
 
@@ -28,6 +31,7 @@ use threadpool::ThreadPool;
 /// the server has started) at compile time.
 pub struct Lumine<State = Builder> {
     routes: Vec<RouteType>,
+    timeout: Option<Duration>,
     workers: usize,
     max_body: usize,
     _state: PhantomData<State>,
@@ -42,6 +46,7 @@ impl Lumine {
     pub fn builder() -> Lumine<Builder> {
         Lumine {
             routes: Vec::new(),
+            timeout: None,
             workers: 2,
             max_body: 1024, // 1KB
             _state: PhantomData::<Builder>,
@@ -58,6 +63,7 @@ impl Lumine<Builder> {
     pub fn build(self) -> Lumine<Ready> {
         Lumine {
             routes: self.routes,
+            timeout: self.timeout,
             workers: self.workers,
             max_body: self.max_body,
             _state: PhantomData::<Ready>,
@@ -137,7 +143,15 @@ impl Lumine<Builder> {
     }
 
     /// Specifies the maximum number of threads to handle client requests.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the number of workers is set to `0`, as at least one worker
+    /// thread is required to serve requests.
     pub fn set_workers(mut self, max: usize) -> Self {
+        if max == 0 {
+            panic!("At least 1 worker");
+        }
         self.workers = max;
         self
     }
@@ -145,6 +159,18 @@ impl Lumine<Builder> {
     /// Specifies maximum body size in bytes.
     pub fn max_body_size(mut self, max: usize) -> Self {
         self.max_body = max;
+        self
+    }
+    /// Set read and write `TcpStream` timeout.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the zero [`Duration`] is passed to this method.
+    pub fn set_timeout(mut self, duration: Duration) -> Self {
+        if duration.is_zero() {
+            panic!("The timeout duration can't be zero.");
+        }
+        self.timeout = Some(duration);
         self
     }
 }
@@ -155,19 +181,10 @@ impl Lumine<Ready> {
     /// This method consumes the application in the `Ready` state and begins
     /// accepting connections from the provided `TcpListener`.
     ///
-    /// Internally, Lumine spawns worker threads to handle incoming requests.
-    /// Any client-side errors that occur during request handling are sent
-    /// through the returned channel.
-    ///
     /// The returned [`Receiver`] **must** be continuously polled to keep the
     /// internal event loop alive. Dropping or ignoring it will cause the
     /// server to stop processing events.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the number of workers is set to `0`, as at least one worker
-    /// thread is required to serve requests.
-    pub fn serve(self, listener: TcpListener) -> Result<Receiver<Error>> {
+    pub fn serve(self, listener: TcpListener) -> Receiver<Client<Ready>> {
         let (tx, rx) = mpsc::channel();
 
         thread::spawn(move || {
@@ -176,23 +193,23 @@ impl Lumine<Ready> {
             let app = Arc::new(self);
             let tx = Arc::new(tx);
 
-            for stream in listener.incoming() {
+            for stream_result in listener.incoming() {
                 let app = Arc::clone(&app);
                 let tx = Arc::clone(&tx);
 
-                pool.execute(move || {
-                    if let Ok(stream) = stream
-                        && let Err(err) = handler::handle_client(app, stream)
-                    {
-                        // Send client error messages via sender
-                        let _ = tx.send(err);
-                    }
-                });
+                if let Ok(stream) = stream_result {
+                    let _ = stream.set_read_timeout(app.timeout);
+                    let _ = stream.set_write_timeout(app.timeout);
+
+                    pool.execute(move || {
+                        let _ = handler::handle_client(app, stream, tx);
+                    });
+                }
             }
         });
 
         // Returning the receiver for error handling
-        Ok(rx)
+        rx
     }
 
     pub(crate) fn get_route(&self, uri: &Uri) -> Option<(&RouteType, Params, Query)> {

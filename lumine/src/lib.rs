@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 
-mod services;
+mod internal;
 
 pub mod application;
 pub mod error;

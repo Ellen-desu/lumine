@@ -41,83 +41,51 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("HTTP error")]
-    HTTPError {
+    Http {
         #[source]
         source: http::Error,
     },
-
-    #[error("Malformed request line")]
-    InvalidRequestLine,
-
-    #[error("Method not recognized")]
-    InvalidMethod {
-        #[source]
-        source: InvalidMethod,
-    },
-
-    #[error("Failed to construct URI")]
-    InvalidUri {
-        #[source]
-        source: InvalidUri,
-    },
-
-    #[error("Unsupported HTTP version: {0}")]
-    InvalidVersion(String),
-
-    #[error("Unrecognized header name")]
-    InvalidHeaderName {
-        #[source]
-        source: InvalidHeaderName,
-    },
-
-    #[error("Header value doesn't match expected format")]
-    InvalidHeaderValue {
-        #[source]
-        source: InvalidHeaderValue,
-    },
-
-    #[error("Invalid request body: {0}")]
-    InvalidBody(&'static str),
-
     #[error("IO error")]
-    IOError {
+    Io {
         #[source]
-        source: io::Error,
+        source: std::io::Error,
     },
+    #[error("failed to parse HTTP request")]
+    Parser,
 }
 
 impl From<http::Error> for Error {
     fn from(value: http::Error) -> Self {
-        Self::HTTPError { source: value }
-    }
-}
-
-impl From<InvalidMethod> for Error {
-    fn from(value: InvalidMethod) -> Self {
-        Self::InvalidMethod { source: value }
-    }
-}
-
-impl From<InvalidUri> for Error {
-    fn from(value: InvalidUri) -> Self {
-        Self::InvalidUri { source: value }
-    }
-}
-
-impl From<InvalidHeaderName> for Error {
-    fn from(value: InvalidHeaderName) -> Self {
-        Self::InvalidHeaderName { source: value }
-    }
-}
-
-impl From<InvalidHeaderValue> for Error {
-    fn from(value: InvalidHeaderValue) -> Self {
-        Self::InvalidHeaderValue { source: value }
+        Self::Http { source: value }
     }
 }
 
 impl From<io::Error> for Error {
     fn from(value: io::Error) -> Self {
-        Self::IOError { source: value }
+        Self::Io { source: value }
+    }
+}
+
+impl From<InvalidHeaderName> for Error {
+    fn from(_: InvalidHeaderName) -> Self {
+        Self::Parser
+    }
+}
+
+impl From<InvalidHeaderValue> for Error {
+    fn from(_: InvalidHeaderValue) -> Self {
+        Self::Parser
+    }
+}
+
+impl From<InvalidMethod> for Error {
+    fn from(_: InvalidMethod) -> Self {
+        Self::Parser
+    }
+}
+
+impl From<InvalidUri> for Error {
+    fn from(_: InvalidUri) -> Self {
+        Self::Parser
     }
 }

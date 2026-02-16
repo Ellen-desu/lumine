@@ -58,18 +58,18 @@ fn main() -> Result<()> {
     let listener = TcpListener::bind("127.0.0.1:8080")?;
 
     // Start serving incoming connections
-    if let Ok(rx) = app.serve(listener) {
-        // ⚠️ IMPORTANT:
-        // This loop is REQUIRED.
-        //
-        // The receiver must be continuously polled to keep the
-        // internal event loop alive. If this loop is removed,
-        // the server will stop processing events properly.
-        //
-        // In short: no recv loop = dead server.
-        while let Ok(err) = rx.recv() {
-            eprintln!("Client error: {err}");
-        }
+    let rx = app.serve(listener);
+    
+    // ⚠️ IMPORTANT:
+    // This loop is REQUIRED.
+    //
+    // The receiver must be continuously polled to keep the
+    // internal event loop alive. If this loop is removed,
+    // the server will stop processing events properly.
+    //
+    // In short: no recv loop = dead server.
+    while let Ok(err) = rx.recv() {
+        eprintln!("Client error: {err}");
     }
 
     Ok(())
@@ -109,18 +109,10 @@ No async runtime, no hidden magic.
 
 ---
 
-## Development Plan
-
-* Add more tests, especially for error handling
-* Add more features (e.g. middleware)
-
----
-
 ## Project Status
 
 > ⚠️ **Early Development Warning**
 
-Lumine is currently in version `0.1`.
 Breaking changes may occur as the API evolves.
 
 ---

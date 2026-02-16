@@ -10,20 +10,26 @@ use std::{
 };
 
 pub(crate) fn parse_request_line(line: &str) -> Result<(Method, Uri, Version)> {
-    let mut split = line.split_whitespace();
+    let parts: Vec<&str> = line.split_whitespace().collect();
 
-    let method = Method::from_str(split.next().ok_or(Error::InvalidRequestLine)?)?;
+    if parts.len() > 3 {
+        return Err(Error::Parser);
+    }
 
-    let uri = Uri::from_str(split.next().ok_or(Error::InvalidRequestLine)?)?;
+    let method = Method::from_str(parts[0])?;
 
-    let version_str = split.next().ok_or(Error::InvalidRequestLine)?;
+    let uri = Uri::from_str(parts[1])?;
+
+    let version_str = parts[2];
     let version = match version_str {
         "HTTP/0.9" => Version::HTTP_09,
         "HTTP/1.0" => Version::HTTP_10,
         "HTTP/1.1" => Version::HTTP_11,
         "HTTP/2" => Version::HTTP_2,
         "HTTP/3" => Version::HTTP_3,
-        _ => return Err(Error::InvalidVersion(version_str.into())),
+        _ => {
+            return Err(Error::Parser);
+        }
     };
 
     Ok((method, uri, version))
@@ -43,13 +49,9 @@ pub(crate) fn parse_header(line: &str) -> Result<(HeaderName, HeaderValue)> {
 pub(crate) fn parse_body(headers: &HeaderMap, reader: &mut BufReader<&TcpStream>) -> Result<Body> {
     let content_len = match headers.get("content-length") {
         Some(header_value) => {
-            let len_str = header_value
-                .to_str()
-                .map_err(|_| Error::InvalidBody("Failed to parse Content-Length header to str"))?;
+            let len_str = header_value.to_str().map_err(|_| Error::Parser)?;
 
-            len_str
-                .parse::<usize>()
-                .map_err(|_| Error::InvalidBody("Failed to parse Content-Length header to int"))?
+            len_str.parse::<usize>().map_err(|_| Error::Parser)?
         }
         _ => 0,
     };

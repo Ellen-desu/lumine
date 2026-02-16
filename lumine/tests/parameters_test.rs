@@ -18,7 +18,7 @@ fn test_single_path_parameter() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10001").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10001/users/123")
         .call()
@@ -39,7 +39,7 @@ fn test_single_path_parameter_string_value() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10002").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10002/posts/my-awesome-post")
         .call()
@@ -63,7 +63,7 @@ fn test_single_path_parameter_numeric_string() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10003").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10003/api/v1/items/42")
         .call()
@@ -89,7 +89,7 @@ fn test_multiple_path_parameters() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10004").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10004/users/10/posts/99")
         .call()
@@ -113,7 +113,7 @@ fn test_three_path_parameters() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10005").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10005/orgs/1/teams/5/members/20")
         .call()
@@ -138,7 +138,7 @@ fn test_four_path_parameters() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10006").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10006/a/1/b/2/c/3/d/4")
         .call()
@@ -163,7 +163,7 @@ fn test_single_query_parameter() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10007").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10007/search?q=rust")
         .call()
@@ -186,7 +186,7 @@ fn test_multiple_different_query_parameters() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10008").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10008/filter?category=books&sort=price")
         .call()
@@ -207,7 +207,7 @@ fn test_query_parameter_with_special_characters() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10009").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10009/api?name=John%20Doe")
         .call()
@@ -232,7 +232,7 @@ fn test_duplicate_query_parameters_same_key() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10010").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10010/tags?tag=rust&tag=web&tag=api")
         .call()
@@ -253,7 +253,7 @@ fn test_duplicate_query_parameters_count() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10011").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10011/list?item=a&item=b&item=c&item=d")
         .call()
@@ -276,7 +276,7 @@ fn test_mixed_duplicate_and_unique_query_parameters() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10012").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response =
         ureq::get("http://127.0.0.1:10012/advanced?page=2&filter=active&filter=verified")
@@ -306,7 +306,7 @@ fn test_path_and_query_parameters_combined() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10013").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10013/users/5/posts?sort=date")
         .call()
@@ -339,7 +339,7 @@ fn test_complex_path_and_query_combination() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10014").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get(
         "http://127.0.0.1:10014/api/v1/orgs/123/users/456?fields=name&fields=email&include=profile",
@@ -372,7 +372,7 @@ fn test_route_without_parameters() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10015").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10015/static").call().unwrap();
     let body = response.into_body().read_to_string().unwrap();
@@ -394,7 +394,7 @@ fn test_query_parameters_none_when_no_query_string() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10016").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10016/list").call().unwrap();
     let body = response.into_body().read_to_string().unwrap();
@@ -418,7 +418,7 @@ fn test_accessing_nonexistent_parameter() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10017").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10017/items/123")
         .call()
@@ -445,7 +445,7 @@ fn test_parse_parameter_as_u32() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10018").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10018/numbers/21")
         .call()
@@ -468,7 +468,7 @@ fn test_parse_parameter_as_i32() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10019").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10019/temperature/-15")
         .call()
@@ -491,7 +491,7 @@ fn test_parse_parameter_as_f64() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10020").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10020/price/100.50")
         .call()
@@ -516,7 +516,7 @@ fn test_query_parameter_with_equals_sign() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10021").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     // Note: URL encoding converts = to %3D
     let response = ureq::get("http://127.0.0.1:10021/config?setting=key%3Dvalue")
@@ -538,7 +538,7 @@ fn test_query_parameter_with_ampersand() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10022").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     // Ampersand encoded as %26
     let response = ureq::get("http://127.0.0.1:10022/expr?expr=a%26b%26c")
@@ -564,7 +564,7 @@ fn test_parameter_with_hyphens() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10023").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10023/posts/my-awesome-blog-post")
         .call()
@@ -585,7 +585,7 @@ fn test_parameter_with_underscores() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10024").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10024/user/john_doe_123")
         .call()
@@ -606,7 +606,7 @@ fn test_parameter_with_numbers_and_letters() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10025").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10025/v/v2beta3")
         .call()
@@ -629,7 +629,7 @@ fn test_empty_query_parameter_value() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:10026").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:10026/search?q=")
         .call()

@@ -50,7 +50,7 @@ fn test_static_route_matching() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:8081").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     // Test static routes
     let response = ureq::get("http://127.0.0.1:8081/users").call();
@@ -75,7 +75,7 @@ fn test_dynamic_route_matching_single_param() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:8082").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     // Should match
     let response = ureq::get("http://127.0.0.1:8082/users/123").call();
@@ -102,7 +102,7 @@ fn test_dynamic_route_multiple_params() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:8083").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     // Should match dan extract both params
     let response = ureq::get("http://127.0.0.1:8083/users/42/posts/99").call();
@@ -121,7 +121,7 @@ fn test_route_priority_static_vs_dynamic() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:8084").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let mut response = ureq::get("http://127.0.0.1:8084/users/me").call().unwrap();
     let body = response.body_mut().read_to_string().unwrap();
@@ -134,7 +134,7 @@ fn test_trailing_slash_normalization() {
     let app = Lumine::builder().route("/users", |_| "users").build();
 
     let listener = TcpListener::bind("127.0.0.1:8085").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     // Both should match
     let response1 = ureq::get("http://127.0.0.1:8085/users").call();
@@ -158,7 +158,7 @@ fn test_deep_nested_routes() {
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:8086").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:8086/api/v1/users/1/posts/2/comments/3").call();
     assert!(response.is_ok());
@@ -169,7 +169,7 @@ fn test_root_path() {
     let app = Lumine::builder().route("/", |_| "home").build();
 
     let listener = TcpListener::bind("127.0.0.1:8087").unwrap();
-    let _rx = app.serve(listener).unwrap();
+    let _rx = app.serve(listener);
 
     let response = ureq::get("http://127.0.0.1:8087/").call();
     assert!(response.is_ok());
