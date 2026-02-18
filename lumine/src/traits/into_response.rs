@@ -72,6 +72,23 @@ where
     }
 }
 
+impl<B> IntoResponse for (u16, B)
+where
+    B: IntoBody,
+{
+    fn into_response(self) -> Result<Response> {
+        if !(100..=599).contains(&self.0) {
+            return http::Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(Body::new());
+        }
+
+        http::Response::builder()
+            .status(self.0)
+            .body(self.1.into_body())
+    }
+}
+
 impl IntoResponse for (StatusCode, HeaderMap) {
     fn into_response(self) -> Result<Response> {
         let mut builder = http::Response::builder().status(self.0);
@@ -81,6 +98,24 @@ impl IntoResponse for (StatusCode, HeaderMap) {
         }
 
         builder.body(Body::default())
+    }
+}
+
+impl IntoResponse for (u16, HeaderMap) {
+    fn into_response(self) -> Result<Response> {
+        if !(100..=599).contains(&self.0) {
+            return http::Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(Body::new());
+        }
+
+        let mut builder = http::Response::builder().status(self.0);
+
+        for (key, value) in self.1.iter() {
+            builder = builder.header(key, value);
+        }
+
+        builder.body(Body::new())
     }
 }
 
@@ -114,6 +149,27 @@ where
     }
 }
 
+impl<B> IntoResponse for (u16, HeaderMap, B)
+where
+    B: IntoBody,
+{
+    fn into_response(self) -> Result<Response> {
+        if !(100..=599).contains(&self.0) {
+            return http::Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(Body::new());
+        }
+
+        let mut builder = http::Response::builder().status(self.0);
+
+        for (key, value) in self.1.iter() {
+            builder = builder.header(key, value);
+        }
+
+        builder.body(self.2.into_body())
+    }
+}
+
 impl IntoResponse for Vec<u8> {
     fn into_response(self) -> Result<Response> {
         http::Response::builder().body(self)
@@ -137,10 +193,10 @@ where
 
 impl IntoResponse for u16 {
     fn into_response(self) -> Result<Response> {
-        if !(100..=500).contains(&self) {
+        if !(100..=599).contains(&self) {
             return http::Response::builder()
-                .status(500)
-                .body("Handler returned invalid status code".into_body());
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(Body::new());
         }
 
         http::Response::builder().status(self).body(Body::new())
