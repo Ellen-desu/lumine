@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-02-18
+
+### Added
+- Added IntoResponse implementations for (u16, Body), (u16, HeaderMap), and (u16, HeaderMap, Body).
+
+### Changed
+- Improved the quality of the crate usage examples by adding some documentation and refactoring the code.
+
+### Fixed
+- 500 response occurs when the handler returns a status code above 500 but still below 600.
+
+### Removed
+- Error body response when the handler returns an invalid status code.
+
 ## [0.2.0] - 2026-02-15
 
 ### Added
