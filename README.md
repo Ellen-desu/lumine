@@ -25,14 +25,7 @@ Lumine exists for cases where you want:
 
 ## Installation
 
-Add Lumine to your project using Cargo.
-
-Using `Cargo.toml`:
-```toml
-lumine = "0.1"
-````
-
-Or via command line:
+Add Lumine to your project via command line.
 
 ```bash
 cargo add lumine
