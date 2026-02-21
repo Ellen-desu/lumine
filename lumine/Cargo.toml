@@ -1,7 +1,7 @@
 [package]
 name = "lumine"
 description = "A simple and minimal HTTP web server."
-version = "0.2.2"
+version = "0.2.3"
 edition = "2024"
 license = "MIT"
 readme = "README.md"
