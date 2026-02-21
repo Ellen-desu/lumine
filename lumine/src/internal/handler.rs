@@ -18,17 +18,17 @@ use std::{
 pub(crate) fn handle_client(
     app: Arc<Lumine<Ready>>,
     stream: TcpStream,
-    tx: Arc<Sender<Client<Ready>>>,
+    tx: Arc<Sender<Client>>,
 ) -> Result<()> {
-    let mut client = Client::builder();
+    let mut client = Client::default();
     let request_result = read_request(&stream);
 
     let mut response = match request_result {
-        Ok(Some(req)) => {
-            client = client.method(req.method().clone());
-            client = client.url(req.uri().clone());
+        Ok(Some(request)) => {
+            client.method = request.method().clone();
+            client.url = request.uri().clone();
 
-            handle_request(req, &app)?
+            handle_request(request, &app)?
         }
         // Client disconected
         Ok(None) => return Ok(()),
@@ -37,8 +37,8 @@ pub(crate) fn handle_client(
             .body(Body::default())?,
     };
 
-    client = client.status(response.status());
-    let _ = tx.send(client.build());
+    client.status = response.status();
+    let _ = tx.send(client);
 
     set_default_header(&mut response)?;
 

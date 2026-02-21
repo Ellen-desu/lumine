@@ -184,7 +184,7 @@ impl Lumine<Ready> {
     /// The returned [`Receiver`] **must** be continuously polled to keep the
     /// internal event loop alive. Dropping or ignoring it will cause the
     /// server to stop processing events.
-    pub fn serve(self, listener: TcpListener) -> Receiver<Client<Ready>> {
+    pub fn serve(self, listener: TcpListener) -> Receiver<Client> {
         let (tx, rx) = mpsc::channel();
 
         thread::spawn(move || {
