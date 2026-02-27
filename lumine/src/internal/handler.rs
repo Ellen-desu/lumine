@@ -20,29 +20,30 @@ pub(crate) fn handle_client(
     stream: TcpStream,
     tx: Arc<Sender<Client>>,
 ) -> Result<()> {
-    let mut client = Client::default();
-    let request_result = read_request(&stream);
+    loop {
+        let mut client = Client::default();
+        let request_result = read_request(&stream);
 
-    let mut response = match request_result {
-        Ok(Some(request)) => {
-            client.method = request.method().clone();
-            client.url = request.uri().clone();
+        let mut response = match request_result {
+            Ok(Some(request)) => {
+                client.method = request.method().clone();
+                client.url = request.uri().clone();
 
-            handle_request(request, &app)?
-        }
-        // Client disconected
-        Ok(None) => return Ok(()),
-        _ => http::Response::builder()
-            .status(StatusCode::BAD_REQUEST)
-            .body(Body::default())?,
-    };
+                handle_request(request, &app)?
+            }
+            // Client disconected
+            Ok(None) => break,
+            _ => http::Response::builder()
+                .status(StatusCode::BAD_REQUEST)
+                .body(Body::default())?,
+        };
 
-    client.status = response.status();
-    let _ = tx.send(client);
+        client.status = response.status();
+        let _ = tx.send(client);
 
-    set_default_header(&mut response)?;
-
-    write_response(response, &stream)?;
+        set_default_header(&mut response)?;
+        write_response(response, &stream)?;
+    }
 
     Ok(())
 }
