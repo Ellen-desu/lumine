@@ -39,7 +39,7 @@ fn generate_routes(n: usize) -> Vec<lumine::http::Uri> {
 }
 
 #[allow(clippy::unit_arg)]
-fn benchmark(c: &mut Criterion) {
+fn routing_benchmark(c: &mut Criterion) {
     let app = build_app();
 
     for &n in &[1_000, 10_000, 50_000] {
@@ -60,5 +60,5 @@ fn benchmark(c: &mut Criterion) {
     }
 }
 
-criterion_group!(bench, benchmark);
+criterion_group!(bench, routing_benchmark);
 criterion_main!(bench);
