@@ -2,7 +2,7 @@ use crate::{
     error::Error,
     types::{body::Body, result::Result},
 };
-use http::{HeaderMap, HeaderName, HeaderValue, Method, Uri, Version};
+use http::{HeaderMap, HeaderName, HeaderValue, Method, Uri, Version, header::CONTENT_LENGTH};
 use std::{
     io::{BufReader, Read},
     net::TcpStream,
@@ -47,7 +47,7 @@ pub(crate) fn parse_header(line: &str) -> Result<(HeaderName, HeaderValue)> {
 }
 
 pub(crate) fn parse_body(headers: &HeaderMap, reader: &mut BufReader<&TcpStream>) -> Result<Body> {
-    let content_len = match headers.get("content-length") {
+    let content_len = match headers.get(CONTENT_LENGTH) {
         Some(header_value) => {
             let len_str = header_value.to_str().map_err(|_| Error::Parser)?;
 
