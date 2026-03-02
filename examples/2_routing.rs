@@ -7,7 +7,7 @@
 //! - Route matching and dispatch
 //! - Different handler functions
 //! - Simple static routes
-//! - Worker thread configuration
+//! - Timeout configuration
 //!
 //! ## Try It
 //! ```bash
@@ -19,12 +19,12 @@
 //! ```
 
 use lumine::{IntoResponse, Lumine, Request, Result, http::StatusCode};
-use std::net::TcpListener;
+use std::{net::TcpListener, time::Duration};
 
 fn main() -> Result<()> {
     let app = Lumine::builder()
-        // Configure number of worker threads (default: 2)
-        .set_workers(4)
+        // Read and write timeout
+        .set_timeout(Duration::from_secs(5))
         // Homepage
         .route("/", index_handler)
         // Static pages
