@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-03-02
+
+### Added
+- `should_server_close` and `set_connection_header` support function for handler.
+
+### Removed
+- `threadpool` dependency.
+- *BREAKING:* Workers configuration.
+
+### Fixed
+- Thread starvation on keep-alive connections.
+
+### Changed
+- The key is entered when retrieving `content-length` header value.
+- `routing` example application build flow to prevent breaking change.
+
 ## [0.2.4] - 2026-02-27
 
 ### Removed
