@@ -19,7 +19,6 @@ use std::{
     thread,
     time::Duration,
 };
-use threadpool::ThreadPool;
 
 /// The main HTTP application structure.
 ///
@@ -32,7 +31,6 @@ use threadpool::ThreadPool;
 pub struct Lumine<State = Builder> {
     routes: Vec<RouteType>,
     timeout: Option<Duration>,
-    workers: usize,
     max_body: usize,
     _state: PhantomData<State>,
 }
@@ -47,7 +45,6 @@ impl Lumine {
         Lumine {
             routes: Vec::new(),
             timeout: None,
-            workers: 2,
             max_body: 1024, // 1KB
             _state: PhantomData::<Builder>,
         }
@@ -64,7 +61,6 @@ impl Lumine<Builder> {
         Lumine {
             routes: self.routes,
             timeout: self.timeout,
-            workers: self.workers,
             max_body: self.max_body,
             _state: PhantomData::<Ready>,
         }
@@ -142,20 +138,6 @@ impl Lumine<Builder> {
         self
     }
 
-    /// Specifies the maximum number of threads to handle client requests.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the number of workers is set to `0`, as at least one worker
-    /// thread is required to serve requests.
-    pub fn set_workers(mut self, max: usize) -> Self {
-        if max == 0 {
-            panic!("At least 1 worker");
-        }
-        self.workers = max;
-        self
-    }
-
     /// Specifies maximum body size in bytes.
     pub fn max_body_size(mut self, max: usize) -> Self {
         self.max_body = max;
@@ -188,8 +170,6 @@ impl Lumine<Ready> {
         let (tx, rx) = mpsc::channel();
 
         thread::spawn(move || {
-            let pool = ThreadPool::new(self.workers);
-
             let app = Arc::new(self);
             let tx = Arc::new(tx);
 
@@ -201,7 +181,7 @@ impl Lumine<Ready> {
                     let _ = stream.set_read_timeout(app.timeout);
                     let _ = stream.set_write_timeout(app.timeout);
 
-                    pool.execute(move || {
+                    thread::spawn(move || {
                         let _ = handler::handle_client(app, stream, tx);
                     });
                 }
@@ -238,11 +218,6 @@ impl Lumine<Ready> {
     #[cfg(feature = "bench")]
     pub fn get_route_for_bench(&self, uri: &Uri) -> Option<(&RouteType, Params, Query)> {
         self.get_route(uri)
-    }
-
-    /// Get the application workers that have been set
-    pub fn workers(&self) -> usize {
-        self.workers
     }
 
     /// Get the application maximum body that have been set

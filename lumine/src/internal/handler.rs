@@ -24,25 +24,53 @@ pub(crate) fn handle_client(
         let mut client = Client::default();
         let request_result = read_request(&stream);
 
-        let mut response = match request_result {
+        let (request, client_wants_close) = match request_result {
             Ok(Some(request)) => {
-                client.method = request.method().clone();
-                client.url = request.uri().clone();
+                let wants_close = request
+                    .headers()
+                    .get(CONNECTION)
+                    .map(|v| v.as_bytes().eq_ignore_ascii_case(b"close"))
+                    .unwrap_or(false);
 
-                handle_request(request, &app)?
+                (request, wants_close)
             }
-            // Client disconected
+            // Client disconnected
             Ok(None) => break,
-            _ => http::Response::builder()
-                .status(StatusCode::BAD_REQUEST)
-                .body(Body::default())?,
+            Err(_) => {
+                let mut response = http::Response::builder()
+                    .status(StatusCode::BAD_REQUEST)
+                    .body(Body::default())?;
+
+                response
+                    .headers_mut()
+                    .append(CONNECTION, HeaderValue::from_static("close"));
+
+                write_response(response, &stream)?;
+
+                break;
+            }
         };
+
+        client.method = request.method().clone();
+        client.url = request.uri().clone();
+
+        let mut response = handle_request(request, &app)?;
 
         client.status = response.status();
         let _ = tx.send(client);
 
+        let server_wants_close = should_server_close(&response);
+
+        let final_close = client_wants_close || server_wants_close;
+
+        set_connection_header(&mut response, final_close)?;
         set_default_header(&mut response)?;
+
         write_response(response, &stream)?;
+
+        if final_close {
+            break;
+        }
     }
 
     Ok(())
@@ -159,7 +187,28 @@ fn set_default_header(response: &mut Response) -> Result<()> {
 
     header_mut.append(DATE, HeaderValue::from_str(&now)?);
     header_mut.append(CONTENT_LENGTH, HeaderValue::from(content_length));
-    header_mut.append(CONNECTION, HeaderValue::from_static("keep-alive"));
+
+    Ok(())
+}
+
+fn should_server_close(response: &Response) -> bool {
+    response.status().is_server_error()
+}
+
+fn set_connection_header(response: &mut Response, should_close: bool) -> Result<()> {
+    if response.headers().contains_key(CONNECTION) {
+        return Ok(());
+    }
+
+    if should_close {
+        response
+            .headers_mut()
+            .insert(CONNECTION, HeaderValue::from_static("close"));
+    } else {
+        response
+            .headers_mut()
+            .insert(CONNECTION, HeaderValue::from_static("keep-alive"));
+    }
 
     Ok(())
 }
