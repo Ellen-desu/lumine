@@ -43,5 +43,3 @@ pub use body::Body;
 pub use request::Request;
 pub use response::Response;
 pub use result::Result;
-
-pub(crate) mod route;

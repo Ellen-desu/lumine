@@ -5,8 +5,8 @@ use crate::{
     },
     internal::handler,
     routing::{params::Params, path::Path, query::Query, route::Route},
-    traits::into_response::IntoResponse,
-    types::{request::Request, route::RouteType},
+    traits::{into_response::IntoResponse, route_service::RouteService},
+    types::request::Request,
 };
 use http::Uri;
 use std::{
@@ -20,6 +20,8 @@ use std::{
     time::Duration,
 };
 
+type R = Box<dyn RouteService + Send + Sync>;
+
 /// The main HTTP application structure.
 ///
 /// `Lumine` uses a compile-time state system to ensure correct API usage.
@@ -29,7 +31,7 @@ use std::{
 /// This design prevents invalid usage (such as modifying routes after
 /// the server has started) at compile time.
 pub struct Lumine<State = Builder> {
-    routes: Vec<RouteType>,
+    routes: Vec<R>,
     timeout: Option<Duration>,
     max_body: usize,
     _state: PhantomData<State>,
@@ -192,7 +194,7 @@ impl Lumine<Ready> {
         rx
     }
 
-    pub(crate) fn get_route(&self, uri: &Uri) -> Option<(&RouteType, Params, Query)> {
+    pub(crate) fn get_route(&self, uri: &Uri) -> Option<(&R, Params, Query)> {
         let mut query = Query::default();
 
         if let Some(raw_query) = uri.query() {
@@ -216,7 +218,7 @@ impl Lumine<Ready> {
 
     /// Same as `Lumine::get_route` method but only for performance testing.
     #[cfg(feature = "bench")]
-    pub fn get_route_for_bench(&self, uri: &Uri) -> Option<(&RouteType, Params, Query)> {
+    pub fn get_route_for_bench(&self, uri: &Uri) -> Option<(&R, Params, Query)> {
         self.get_route(uri)
     }
 
