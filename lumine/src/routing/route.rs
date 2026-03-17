@@ -6,7 +6,7 @@ use crate::{
 
 pub(crate) struct Route<'a, F> {
     pub(crate) path: Path<'a>,
-    pub(crate) callback: F,
+    pub(crate) handler: F,
 }
 
 impl<'a, F, R> RouteService for Route<'a, F>
@@ -39,6 +39,6 @@ where
         *self.path == **path
     }
     fn call(&self, request: Request) -> Result<Response> {
-        Ok((self.callback)(request).into_response()?)
+        Ok((self.handler)(request).into_response()?)
     }
 }

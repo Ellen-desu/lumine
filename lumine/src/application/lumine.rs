@@ -122,7 +122,7 @@ impl Lumine<Builder> {
     ///     .route("/users/:userId", user)
     ///     .build();
     /// ```
-    pub fn route<F, R>(mut self, path: &'static str, callback: F) -> Self
+    pub fn route<F, R>(mut self, path: &'static str, handler: F) -> Self
     where
         F: Fn(Request) -> R + Send + Sync + 'static,
         R: IntoResponse,
@@ -134,7 +134,7 @@ impl Lumine<Builder> {
             }
         }
 
-        self.routes.push(Box::new(Route { path, callback }));
+        self.routes.push(Box::new(Route { path, handler }));
         self
     }
 
