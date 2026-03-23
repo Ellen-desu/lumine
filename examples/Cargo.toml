@@ -32,3 +32,7 @@ path = "4_request.rs"
 [[example]]
 name = "parameters"
 path = "5_parameters.rs"
+
+[[example]]
+name = "middleware"
+path = "6_middleware.rs"
