@@ -1,5 +1,5 @@
 use crate::{
-    traits::into_body::IntoBody,
+    routing::into_body::IntoBody,
     types::{body::Body, response::Response},
 };
 use http::{HeaderMap, Result, StatusCode};

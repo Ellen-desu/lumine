@@ -35,7 +35,7 @@ use std::str::Bytes;
 /// # Example
 ///
 /// ```rust
-/// use lumine::traits::into_body::IntoBody;
+/// use lumine::routing::into_body::IntoBody;
 ///
 /// let body = "Hello, world!".into_body();
 ///

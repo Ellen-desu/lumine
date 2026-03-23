@@ -98,12 +98,15 @@
 pub mod params;
 pub mod path;
 pub mod query;
+pub mod route;
 
-pub(crate) mod route;
+pub mod into_body;
+pub mod into_response;
+pub mod route_service;
 
-pub use params::Params;
-pub use path::Path;
-pub use query::Query;
+pub use self::{
+    into_response::IntoResponse, params::Params, path::Path, query::Query, route::Route,
+};
 
 #[allow(unused)]
 use crate::types::request::Request;
