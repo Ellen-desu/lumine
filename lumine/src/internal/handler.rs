@@ -1,6 +1,7 @@
 use crate::{
     application::{client::Client, lumine::Lumine, states::Ready},
     internal::parser,
+    middleware::next::Next,
     types::{body::Body, request::Request, response::Response, result::Result},
 };
 use chrono::Utc;
@@ -88,7 +89,23 @@ fn handle_request(mut request: Request, app: &Arc<Lumine<Ready>>) -> Result<Resp
                 ext.insert(params);
                 ext.insert(query);
 
-                match panic::catch_unwind(AssertUnwindSafe(|| route.call(request).unwrap())) {
+                let mut chain = Vec::new();
+
+                let iter = if route.route_middleware_first() {
+                    route.middlewares().iter().chain(app.middlewares())
+                } else {
+                    app.middlewares().iter().chain(route.middlewares())
+                }
+                .map(|b| b.as_ref());
+
+                chain.extend(iter);
+
+                let next = Next {
+                    middlewares: &chain,
+                    route,
+                };
+
+                match panic::catch_unwind(AssertUnwindSafe(|| next.run(request).unwrap())) {
                     Ok(response) => response,
                     _ => http::Response::builder()
                         .status(StatusCode::INTERNAL_SERVER_ERROR)

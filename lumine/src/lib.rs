@@ -4,23 +4,23 @@ mod internal;
 
 pub mod application;
 pub mod error;
+pub mod middleware;
 pub mod routing;
-pub mod traits;
 pub mod types;
 
 #[doc(inline)]
-pub use crate::application::lumine::Lumine;
+pub use crate::application::Lumine;
 
 #[doc(inline)]
 pub use crate::error::Error;
 
 #[doc(inline)]
-pub use crate::routing::{params::Params, path::Path, query::Query};
+pub use crate::routing::{IntoResponse, Params, Path, Query, Route};
 
 #[doc(inline)]
-pub use crate::traits::{into_body::IntoBody, into_response::IntoResponse};
+pub use crate::middleware::{Middleware, Next};
 
 #[doc(inline)]
-pub use crate::types::{body::Body, request::Request, response::Response, result::Result};
+pub use crate::types::{Body, Request, Response, Result};
 
 pub use http;

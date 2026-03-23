@@ -4,8 +4,11 @@ use crate::{
         states::{Builder, Ready},
     },
     internal::handler,
-    routing::{params::Params, path::Path, query::Query, route::Route},
-    traits::{into_response::IntoResponse, route_service::RouteService},
+    middleware::Middleware,
+    routing::{
+        into_response::IntoResponse, params::Params, path::Path, query::Query, route::Route,
+        route_service::RouteService,
+    },
     types::request::Request,
 };
 use http::Uri;
@@ -20,8 +23,6 @@ use std::{
     time::Duration,
 };
 
-type R = Box<dyn RouteService + Send + Sync>;
-
 /// The main HTTP application structure.
 ///
 /// `Lumine` uses a compile-time state system to ensure correct API usage.
@@ -31,8 +32,9 @@ type R = Box<dyn RouteService + Send + Sync>;
 /// This design prevents invalid usage (such as modifying routes after
 /// the server has started) at compile time.
 pub struct Lumine<State = Builder> {
-    routes: Vec<R>,
+    routes: Vec<Box<dyn RouteService>>,
     timeout: Option<Duration>,
+    middlewares: Vec<Box<dyn Middleware>>,
     max_body: usize,
     _state: PhantomData<State>,
 }
@@ -47,12 +49,14 @@ impl Lumine {
         Lumine {
             routes: Vec::new(),
             timeout: None,
+            middlewares: Vec::new(),
             max_body: 1024, // 1KB
             _state: PhantomData::<Builder>,
         }
     }
 }
 
+/// Same as `Lumine::get_route` method but only for performance testing.
 impl Lumine<Builder> {
     /// Finalizes the application configuration.
     ///
@@ -63,6 +67,7 @@ impl Lumine<Builder> {
         Lumine {
             routes: self.routes,
             timeout: self.timeout,
+            middlewares: self.middlewares,
             max_body: self.max_body,
             _state: PhantomData::<Ready>,
         }
@@ -136,7 +141,47 @@ impl Lumine<Builder> {
             }
         }
 
-        self.routes.push(Box::new(Route { path, handler }));
+        self.routes.push(Box::new(Route {
+            path,
+            middlewares: Vec::new(),
+            route_middleware_first: false,
+            handler,
+        }));
+
+        self
+    }
+
+    /// Registers a route with additional per-route configuration.
+    ///
+    /// This method behaves similarly to [Lumine::route], but allows the caller
+    /// to modify the constructed route before it is registered.
+    pub fn route_with<F, R, W>(mut self, path: &'static str, handler: F, with: W) -> Self
+    where
+        F: Fn(Request) -> R + Send + Sync + 'static,
+        R: IntoResponse,
+        W: Fn(Route<F>) -> Route<F> + Send + Sync + 'static,
+    {
+        let path = Path::from(path);
+        for route in &self.routes {
+            if route.is_duplicated(&path) {
+                panic!("Conflicting routes");
+            }
+        }
+
+        let route = with(Route {
+            path,
+            middlewares: Vec::new(),
+            route_middleware_first: false,
+            handler,
+        });
+
+        self.routes.push(Box::new(route));
+        self
+    }
+
+    /// Add a new global middleware.
+    pub fn middleware<M: Middleware>(mut self, middleware: M) -> Self {
+        self.middlewares.push(Box::new(middleware));
         self
     }
 
@@ -194,7 +239,7 @@ impl Lumine<Ready> {
         rx
     }
 
-    pub(crate) fn get_route(&self, uri: &Uri) -> Option<(&R, Params, Query)> {
+    pub(crate) fn get_route(&self, uri: &Uri) -> Option<(&dyn RouteService, Params, Query)> {
         let mut query = Query::default();
 
         if let Some(raw_query) = uri.query() {
@@ -209,16 +254,20 @@ impl Lumine<Ready> {
         let path_parts = Path::from(uri.path());
         for route in &self.routes {
             if let Some(params) = route.matches(&path_parts) {
-                return Some((route, params, query));
+                return Some((route.as_ref(), params, query));
             }
         }
 
         None
     }
 
+    pub(crate) fn middlewares(&self) -> &[Box<dyn Middleware>] {
+        &self.middlewares
+    }
+
     /// Same as `Lumine::get_route` method but only for performance testing.
     #[cfg(feature = "bench")]
-    pub fn get_route_for_bench(&self, uri: &Uri) -> Option<(&R, Params, Query)> {
+    pub fn get_route_for_bench(&self, uri: &Uri) -> Option<(&dyn RouteService, Params, Query)> {
         self.get_route(uri)
     }
 

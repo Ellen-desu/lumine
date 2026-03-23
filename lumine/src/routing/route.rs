@@ -1,12 +1,29 @@
 use crate::{
-    routing::{params::Params, path::Path},
-    traits::{into_response::IntoResponse, route_service::RouteService},
+    middleware::Middleware,
+    routing::{
+        into_response::IntoResponse, params::Params, path::Path, route_service::RouteService,
+    },
     types::{request::Request, response::Response, result::Result},
 };
 
-pub(crate) struct Route<'a, F> {
+pub struct Route<'a, F> {
     pub(crate) path: Path<'a>,
+    pub(crate) middlewares: Vec<Box<dyn Middleware>>,
+    pub(crate) route_middleware_first: bool,
     pub(crate) handler: F,
+}
+
+impl<'a, F> Route<'a, F> {
+    /// Add a new route middleware.
+    pub fn middleware<M: Middleware>(mut self, middleware: M) -> Self {
+        self.middlewares.push(Box::new(middleware));
+        self
+    }
+    /// Set the route middlewares to run first before running global middlewares.
+    pub fn route_middleware_first(mut self) -> Self {
+        self.route_middleware_first = true;
+        self
+    }
 }
 
 impl<'a, F, R> RouteService for Route<'a, F>
@@ -34,6 +51,13 @@ where
 
             Some(params)
         }
+    }
+    fn middlewares(&self) -> &[Box<dyn Middleware>] {
+        // self.middlewares.iter().map(|b| b.as_ref()).collect()
+        &self.middlewares
+    }
+    fn route_middleware_first(&self) -> bool {
+        self.route_middleware_first
     }
     fn is_duplicated(&self, path: &Path) -> bool {
         *self.path == **path
