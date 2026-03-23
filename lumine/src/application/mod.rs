@@ -75,7 +75,7 @@
 //!
 //! ## Design Rationale
 //!
-//! By encoding lifecycle phases into the type system, Lumine provides:
+//! By encoding lifecycle phases into the type system, Lumine provides:.map(|b| b.as_ref())
 //!
 //! - Clear separation between configuration and runtime phases
 //! - Compile-time guarantees about correct API usage
@@ -89,6 +89,8 @@ pub mod client;
 pub mod lumine;
 pub mod states;
 
-pub use client::Client;
-pub use lumine::Lumine;
-pub use states::{Builder, Ready};
+pub use self::{
+    client::Client,
+    lumine::Lumine,
+    states::{Builder, Ready},
+};

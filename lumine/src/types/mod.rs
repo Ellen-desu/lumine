@@ -39,7 +39,4 @@ pub mod request;
 pub mod response;
 pub mod result;
 
-pub use body::Body;
-pub use request::Request;
-pub use response::Response;
-pub use result::Result;
+pub use self::{body::Body, request::Request, response::Response, result::Result};
