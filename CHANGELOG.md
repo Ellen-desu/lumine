@@ -7,7 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Middleware.
+- Middleware unit test.
+
+## [0.4.0] - 2026-03-23
+
+### Added
+
+- Middleware feature.
+
+### Changed
+
+- ```lib.rs``` now re-exporting from ```mod.rs```.
+- Using ```self``` keyword for re-exporting make code concisely.
+- Moved all routing traits to ```routing``` module.
+
+### Removed
+
+- ```traits``` module.
 
 ## [0.3.1] - 2026-03-18
 
