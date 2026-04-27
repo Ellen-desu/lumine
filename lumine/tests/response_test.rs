@@ -31,16 +31,16 @@ fn test_plain_text_response() {
         .route("/message", |_| "This is a plain text message")
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:9001").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8000").unwrap();
     let _rx = app.serve(listener);
 
     // Test root path
-    let response = ureq::get("http://127.0.0.1:9001/").call().unwrap();
+    let response = ureq::get("http://127.0.0.1:8000/").call().unwrap();
     let body = response.into_body().read_to_string().unwrap();
     assert_eq!(body, "Hello, World!");
 
     // Test message path
-    let response = ureq::get("http://127.0.0.1:9001/message").call().unwrap();
+    let response = ureq::get("http://127.0.0.1:8000/message").call().unwrap();
     let body = response.into_body().read_to_string().unwrap();
     assert_eq!(body, "This is a plain text message");
 }
@@ -52,16 +52,16 @@ fn test_empty_response_body() {
         .route("/void", |_| ())
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:9002").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8001").unwrap();
     let _rx = app.serve(listener);
 
     // Empty string
-    let response = ureq::get("http://127.0.0.1:9002/empty").call().unwrap();
+    let response = ureq::get("http://127.0.0.1:8001/empty").call().unwrap();
     let body = response.into_body().read_to_string().unwrap();
     assert_eq!(body, "");
 
     // Void response
-    let response = ureq::get("http://127.0.0.1:9002/void").call().unwrap();
+    let response = ureq::get("http://127.0.0.1:8001/void").call().unwrap();
     let body = response.into_body().read_to_string().unwrap();
     assert_eq!(body, "");
 }
@@ -83,10 +83,10 @@ fn test_json_response_created() {
         })
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:9003").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8002").unwrap();
     let _rx = app.serve(listener);
 
-    let response = ureq::post("http://127.0.0.1:9003/users")
+    let response = ureq::post("http://127.0.0.1:8002/users")
         .send_empty()
         .unwrap();
     assert_eq!(response.status(), 201);
@@ -119,10 +119,10 @@ fn test_json_response_with_headers() {
         })
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:9004").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8003").unwrap();
     let _rx = app.serve(listener);
 
-    let response = ureq::get("http://127.0.0.1:9004/api/data").call().unwrap();
+    let response = ureq::get("http://127.0.0.1:8003/api/data").call().unwrap();
     assert_eq!(response.status(), 200);
     assert_eq!(
         response.headers().get(CONTENT_TYPE).unwrap(),
@@ -155,10 +155,10 @@ fn test_multiple_json_users() {
         })
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:9005").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8004").unwrap();
     let _rx = app.serve(listener);
 
-    let response = ureq::get("http://127.0.0.1:9005/users/list")
+    let response = ureq::get("http://127.0.0.1:8004/users/list")
         .call()
         .unwrap();
     let users: Vec<User> = serde_json::from_reader(response.into_body().into_reader()).unwrap();
@@ -191,10 +191,10 @@ fn test_html_response() {
         })
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:9006").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8005").unwrap();
     let _rx = app.serve(listener);
 
-    let response = ureq::get("http://127.0.0.1:9006/page").call().unwrap();
+    let response = ureq::get("http://127.0.0.1:8005/page").call().unwrap();
     assert_eq!(response.headers().get(CONTENT_TYPE).unwrap(), "text/html");
 
     let body = response.into_body().read_to_string().unwrap();
@@ -224,33 +224,33 @@ fn test_status_codes() {
         .route("/not-implemented", |_| StatusCode::NOT_IMPLEMENTED)
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:9007").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8006").unwrap();
     let _rx = app.serve(listener);
 
     // 2xx Success
     assert_eq!(
-        ureq::get("http://127.0.0.1:9007/ok")
+        ureq::get("http://127.0.0.1:8006/ok")
             .call()
             .unwrap()
             .status(),
         200
     );
     assert_eq!(
-        ureq::get("http://127.0.0.1:9007/created")
+        ureq::get("http://127.0.0.1:8006/created")
             .call()
             .unwrap()
             .status(),
         201
     );
     assert_eq!(
-        ureq::get("http://127.0.0.1:9007/accepted")
+        ureq::get("http://127.0.0.1:8006/accepted")
             .call()
             .unwrap()
             .status(),
         202
     );
     assert_eq!(
-        ureq::get("http://127.0.0.1:9007/no-content")
+        ureq::get("http://127.0.0.1:8006/no-content")
             .call()
             .unwrap()
             .status(),
@@ -259,29 +259,29 @@ fn test_status_codes() {
 
     // 4xx Client Errors
     assert!(matches!(
-        ureq::get("http://127.0.0.1:9007/bad-request").call(),
+        ureq::get("http://127.0.0.1:8006/bad-request").call(),
         Err(ureq::Error::StatusCode(400))
     ));
     assert!(matches!(
-        ureq::get("http://127.0.0.1:9007/unauthorized").call(),
+        ureq::get("http://127.0.0.1:8006/unauthorized").call(),
         Err(ureq::Error::StatusCode(401))
     ));
     assert!(matches!(
-        ureq::get("http://127.0.0.1:9007/forbidden").call(),
+        ureq::get("http://127.0.0.1:8006/forbidden").call(),
         Err(ureq::Error::StatusCode(403))
     ));
 
     // 5xx Server Errors
     assert!(matches!(
-        ureq::get("http://127.0.0.1:9007/server-error").call(),
+        ureq::get("http://127.0.0.1:8006/server-error").call(),
         Err(ureq::Error::StatusCode(500))
     ));
     assert!(matches!(
-        ureq::get("http://127.0.0.1:9007/server-error").call(),
+        ureq::get("http://127.0.0.1:8006/server-error").call(),
         Err(ureq::Error::StatusCode(500))
     ));
     assert!(matches!(
-        ureq::get("http://127.0.0.1:9007/not-implemented").call(),
+        ureq::get("http://127.0.0.1:8006/not-implemented").call(),
         Err(ureq::Error::StatusCode(501))
     ));
 }
@@ -295,18 +295,18 @@ fn test_u16_status_code() {
         .route("/code-500", |_| 500u16)
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:9008").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8007").unwrap();
     let _rx = app.serve(listener);
 
     assert_eq!(
-        ureq::get("http://127.0.0.1:9008/code-200")
+        ureq::get("http://127.0.0.1:8007/code-200")
             .call()
             .unwrap()
             .status(),
         200
     );
     assert_eq!(
-        ureq::get("http://127.0.0.1:9008/code-201")
+        ureq::get("http://127.0.0.1:8007/code-201")
             .call()
             .unwrap()
             .status(),
@@ -314,11 +314,11 @@ fn test_u16_status_code() {
     );
 
     assert!(matches!(
-        ureq::get("http://127.0.0.1:9008/code-404").call(),
+        ureq::get("http://127.0.0.1:8007/code-404").call(),
         Err(ureq::Error::StatusCode(404))
     ));
     assert!(matches!(
-        ureq::get("http://127.0.0.1:9008/code-500").call(),
+        ureq::get("http://127.0.0.1:8007/code-500").call(),
         Err(ureq::Error::StatusCode(500))
     ));
 }
@@ -329,12 +329,12 @@ fn test_invalid_u16_status_code() {
         .route("/invalid", |_| 999u16) // Invalid status code
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:9009").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8008").unwrap();
     let _rx = app.serve(listener);
 
     // Should return 500 when invalid status code is provided
     assert!(matches!(
-        ureq::get("http://127.0.0.1:9009/invalid").call(),
+        ureq::get("http://127.0.0.1:8008/invalid").call(),
         Err(ureq::Error::StatusCode(500))
     ));
 }
@@ -355,10 +355,10 @@ fn test_custom_headers_only() {
         })
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:9010").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8009").unwrap();
     let _rx = app.serve(listener);
 
-    let response = ureq::get("http://127.0.0.1:9010/with-headers")
+    let response = ureq::get("http://127.0.0.1:8009/with-headers")
         .call()
         .unwrap();
 
@@ -379,10 +379,10 @@ fn test_status_code_with_headers_and_body() {
         })
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:9011").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8010").unwrap();
     let _rx = app.serve(listener);
 
-    let response = ureq::get("http://127.0.0.1:9011/full-response")
+    let response = ureq::get("http://127.0.0.1:8010/full-response")
         .call()
         .unwrap();
     assert_eq!(response.status(), 202);
@@ -405,10 +405,10 @@ fn test_default_headers_are_set() {
         .route("/check-headers", |_| "test content")
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:9012").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8011").unwrap();
     let _rx = app.serve(listener);
 
-    let response = ureq::get("http://127.0.0.1:9012/check-headers")
+    let response = ureq::get("http://127.0.0.1:8011/check-headers")
         .call()
         .unwrap();
 
@@ -433,10 +433,10 @@ fn test_content_length_header() {
         )
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:9013").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8012").unwrap();
     let _rx = app.serve(listener);
 
-    let response1 = ureq::get("http://127.0.0.1:9013/short").call().unwrap();
+    let response1 = ureq::get("http://127.0.0.1:8012/short").call().unwrap();
     let len1 = response1
         .headers()
         .get(CONTENT_LENGTH)
@@ -447,7 +447,7 @@ fn test_content_length_header() {
         .unwrap();
     assert_eq!(len1, 2);
 
-    let response2 = ureq::get("http://127.0.0.1:9013/long").call().unwrap();
+    let response2 = ureq::get("http://127.0.0.1:8012/long").call().unwrap();
     let len2 = response2
         .headers()
         .get(CONTENT_LENGTH)
@@ -463,10 +463,10 @@ fn test_content_length_header() {
 fn test_no_content_type_for_empty_body() {
     let app = Lumine::builder().route("/empty", |_| ()).build();
 
-    let listener = TcpListener::bind("127.0.0.1:9014").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8013").unwrap();
     let _rx = app.serve(listener);
 
-    let response = ureq::get("http://127.0.0.1:9014/empty").call().unwrap();
+    let response = ureq::get("http://127.0.0.1:8013/empty").call().unwrap();
     // Empty response should not have content-type header
     assert!(response.headers().get(CONTENT_TYPE).is_none());
 }
@@ -484,10 +484,10 @@ fn test_large_response_body() {
         .route("/large", move |_| content_clone.clone())
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:9015").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8014").unwrap();
     let _rx = app.serve(listener);
 
-    let response = ureq::get("http://127.0.0.1:9015/large").call().unwrap();
+    let response = ureq::get("http://127.0.0.1:8014/large").call().unwrap();
     let body = response.into_body().read_to_string().unwrap();
 
     assert_eq!(body.len(), 5000);
@@ -500,10 +500,10 @@ fn test_binary_response() {
         .route("/binary", |_| vec![0u8, 1, 2, 3, 255, 254])
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:9016").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8015").unwrap();
     let _rx = app.serve(listener);
 
-    let response = ureq::get("http://127.0.0.1:9016/binary").call().unwrap();
+    let response = ureq::get("http://127.0.0.1:8015/binary").call().unwrap();
     let body = response.into_body().read_to_vec().unwrap();
 
     assert_eq!(body, vec![0u8, 1, 2, 3, 255, 254]);
@@ -517,13 +517,13 @@ fn test_binary_response() {
 fn test_404_not_found() {
     let app = Lumine::builder().route("/exists", |_| "found").build();
 
-    let listener = TcpListener::bind("127.0.0.1:9017").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8016").unwrap();
     let _rx = app.serve(listener);
 
-    let response = ureq::get("http://127.0.0.1:9017/exists").call().unwrap();
+    let response = ureq::get("http://127.0.0.1:8016/exists").call().unwrap();
     assert_eq!(response.status(), 200);
 
-    let response = ureq::get("http://127.0.0.1:9017/not-exists").call();
+    let response = ureq::get("http://127.0.0.1:8016/not-exists").call();
     assert!(matches!(response, Err(ureq::Error::StatusCode(404))));
 }
 
@@ -531,12 +531,12 @@ fn test_404_not_found() {
 fn test_413_payload_too_large() {
     let app = Lumine::builder().route("/upload", |_| "ok").build();
 
-    let listener = TcpListener::bind("127.0.0.1:9018").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8017").unwrap();
     let _rx = app.serve(listener);
 
     // Default max body is 1024 bytes
     let large_body = vec![0u8; 2048];
-    let response = ureq::post("http://127.0.0.1:9018/upload").send(&large_body);
+    let response = ureq::post("http://127.0.0.1:8017/upload").send(&large_body);
 
     assert!(matches!(response, Err(ureq::Error::StatusCode(413))));
 }
@@ -553,10 +553,10 @@ fn test_vec_u8_response() {
         })
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:9019").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8018").unwrap();
     let _rx = app.serve(listener);
 
-    let response = ureq::get("http://127.0.0.1:9019/bytes").call().unwrap();
+    let response = ureq::get("http://127.0.0.1:8018/bytes").call().unwrap();
     let body = response.into_body().read_to_vec().unwrap();
 
     assert_eq!(body, vec![72, 101, 108, 108, 111]);
@@ -572,10 +572,10 @@ fn test_default_content_type_text_plain() {
         .route("/text", |_| "plain text response")
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:9020").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8019").unwrap();
     let _rx = app.serve(listener);
 
-    let response = ureq::get("http://127.0.0.1:9020/text").call().unwrap();
+    let response = ureq::get("http://127.0.0.1:8019/text").call().unwrap();
     assert_eq!(response.headers().get(CONTENT_TYPE).unwrap(), "text/plain");
 }
 
@@ -590,10 +590,10 @@ fn test_custom_content_type_override() {
         })
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:9021").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8020").unwrap();
     let _rx = app.serve(listener);
 
-    let response = ureq::get("http://127.0.0.1:9021/custom").call().unwrap();
+    let response = ureq::get("http://127.0.0.1:8020/custom").call().unwrap();
     assert_eq!(
         response.headers().get(CONTENT_TYPE).unwrap(),
         "application/custom"

@@ -49,18 +49,18 @@ fn test_static_route_matching() {
         .route("/posts", |_| "posts list")
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:8081").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8000").unwrap();
     let _rx = app.serve(listener);
 
     // Test static routes
-    let response = ureq::get("http://127.0.0.1:8081/users").call();
+    let response = ureq::get("http://127.0.0.1:8000/users").call();
     assert!(response.is_ok());
 
-    let response = ureq::get("http://127.0.0.1:8081/posts").call();
+    let response = ureq::get("http://127.0.0.1:8000/posts").call();
     assert!(response.is_ok());
 
     // Not found
-    let response = ureq::get("http://127.0.0.1:8081/comments").call();
+    let response = ureq::get("http://127.0.0.1:8000/comments").call();
     assert!(matches!(response, Err(ureq::Error::StatusCode(404))));
 }
 
@@ -74,19 +74,19 @@ fn test_dynamic_route_matching_single_param() {
         })
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:8082").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8001").unwrap();
     let _rx = app.serve(listener);
 
     // Should match
-    let response = ureq::get("http://127.0.0.1:8082/users/123").call();
+    let response = ureq::get("http://127.0.0.1:8001/users/123").call();
     assert!(response.is_ok());
 
     // Should NOT match (different segment count)
-    let response = ureq::get("http://127.0.0.1:8082/users").call();
+    let response = ureq::get("http://127.0.0.1:8001/users").call();
     assert!(matches!(response, Err(ureq::Error::StatusCode(404))));
 
     // Should NOT match (extra segments)
-    let response = ureq::get("http://127.0.0.1:8082/users/123/posts").call();
+    let response = ureq::get("http://127.0.0.1:8001/users/123/posts").call();
     assert!(matches!(response, Err(ureq::Error::StatusCode(404))));
 }
 
@@ -101,15 +101,15 @@ fn test_dynamic_route_multiple_params() {
         })
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:8083").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8002").unwrap();
     let _rx = app.serve(listener);
 
     // Should match dan extract both params
-    let response = ureq::get("http://127.0.0.1:8083/users/42/posts/99").call();
+    let response = ureq::get("http://127.0.0.1:8002/users/42/posts/99").call();
     assert!(response.is_ok());
 
     // Should NOT match (missing one param)
-    let response = ureq::get("http://127.0.0.1:8083/users/42/posts").call();
+    let response = ureq::get("http://127.0.0.1:8002/users/42/posts").call();
     assert!(matches!(response, Err(ureq::Error::StatusCode(404))));
 }
 
@@ -120,10 +120,10 @@ fn test_route_priority_static_vs_dynamic() {
         .route("/users/:id", |_| "specific user")
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:8084").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8003").unwrap();
     let _rx = app.serve(listener);
 
-    let mut response = ureq::get("http://127.0.0.1:8084/users/me").call().unwrap();
+    let mut response = ureq::get("http://127.0.0.1:8003/users/me").call().unwrap();
     let body = response.body_mut().read_to_string().unwrap();
 
     assert_eq!(body, "current user");
@@ -133,14 +133,14 @@ fn test_route_priority_static_vs_dynamic() {
 fn test_trailing_slash_normalization() {
     let app = Lumine::builder().route("/users", |_| "users").build();
 
-    let listener = TcpListener::bind("127.0.0.1:8085").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8004").unwrap();
     let _rx = app.serve(listener);
 
     // Both should match
-    let response1 = ureq::get("http://127.0.0.1:8085/users").call();
+    let response1 = ureq::get("http://127.0.0.1:8004/users").call();
     assert!(response1.is_ok());
 
-    let response2 = ureq::get("http://127.0.0.1:8085/users/").call();
+    let response2 = ureq::get("http://127.0.0.1:8004/users/").call();
     assert!(response2.is_ok());
 }
 
@@ -157,10 +157,10 @@ fn test_deep_nested_routes() {
         )
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:8086").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8005").unwrap();
     let _rx = app.serve(listener);
 
-    let response = ureq::get("http://127.0.0.1:8086/api/v1/users/1/posts/2/comments/3").call();
+    let response = ureq::get("http://127.0.0.1:8005/api/v1/users/1/posts/2/comments/3").call();
     assert!(response.is_ok());
 }
 
@@ -168,13 +168,13 @@ fn test_deep_nested_routes() {
 fn test_root_path() {
     let app = Lumine::builder().route("/", |_| "home").build();
 
-    let listener = TcpListener::bind("127.0.0.1:8087").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:8006").unwrap();
     let _rx = app.serve(listener);
 
-    let response = ureq::get("http://127.0.0.1:8087/").call();
+    let response = ureq::get("http://127.0.0.1:8006/").call();
     assert!(response.is_ok());
 
     // Should not match non-root
-    let response = ureq::get("http://127.0.0.1:8087/anything").call();
+    let response = ureq::get("http://127.0.0.1:8006/anything").call();
     assert!(matches!(response, Err(ureq::Error::StatusCode(404))));
 }
