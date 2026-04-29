@@ -1,144 +1,176 @@
-#[cfg(test)]
-mod global_middleware {
-    use lumine::{
-        Lumine, Middleware, Request,
-        http::{HeaderValue, StatusCode},
-    };
-    use std::net::TcpListener;
+mod middlewares;
 
-    struct SecretTokenChecker {
-        secret: &'static str,
-    }
+use lumine::{Lumine, http::HeaderValue};
+use middlewares::*;
+use std::{
+    net::TcpListener,
+    sync::{Arc, Mutex},
+};
 
-    impl Middleware for SecretTokenChecker {
-        fn handle(&self, request: Request, next: lumine::Next) -> lumine::Result<lumine::Response> {
-            if let Some(secret) = request.headers().get("SECRET")
-                && secret == self.secret
-            {
-                next.run(request)
-            } else {
-                let mut response = next.run(request)?;
-                *response.status_mut() = StatusCode::UNAUTHORIZED;
+use pretty_assertions::assert_eq;
 
-                Ok(response)
-            }
-        }
-    }
+#[test]
+fn middleware_order_global() {
+    let log = Arc::new(Mutex::new(Vec::new()));
 
-    #[test]
-    fn test_single_middleware() {
-        let app = Lumine::builder()
-            .route("/", |_| "Hello, World!")
-            .middleware(SecretTokenChecker { secret: "LUMINE" })
-            .build();
-        let listener = TcpListener::bind("127.0.0.1:8000").unwrap();
+    let app = Lumine::builder()
+        .route("/", |_| ())
+        .middleware(LoggerA { log: log.clone() })
+        .middleware(LoggerB { log: log.clone() })
+        .build();
+    let listener = TcpListener::bind("127.0.0.1:8000").unwrap();
 
-        app.serve(listener);
+    app.serve(listener);
+    ureq::get("http://127.0.0.1:8000").call().unwrap();
 
-        assert!(
-            ureq::get("http://127.0.0.1:8000")
-                .header("SECRET", "LUMINE")
-                .call()
-                .is_ok(),
-        );
-
-        // Should be error because doesn't have secret key
-        assert!(ureq::get("http://127.0.0.1:8000").call().is_err());
-    }
-
-    struct SecretTokenApplier;
-
-    impl Middleware for SecretTokenApplier {
-        fn handle(
-            &self,
-            mut request: Request,
-            next: lumine::Next,
-        ) -> lumine::Result<lumine::Response> {
-            request
-                .headers_mut()
-                .append("SECRET", HeaderValue::from_static("LUMINE"));
-
-            next.run(request)
-        }
-    }
-
-    #[test]
-    fn test_double_middleware() {
-        let app = Lumine::builder()
-            .route("/", |_| "Hello, World!")
-            .middleware(SecretTokenApplier)
-            .middleware(SecretTokenChecker { secret: "LUMINE" })
-            .build();
-        let listener = TcpListener::bind("127.0.0.1:8001").unwrap();
-
-        app.serve(listener);
-
-        assert!(ureq::get("http://127.0.0.1:8001").call().is_ok());
-    }
-
-    #[test]
-    fn test_reorder_middleware() {
-        let app = Lumine::builder()
-            .route("/", |_| "Hello, World!")
-            .middleware(SecretTokenChecker { secret: "LUMINE" }) // Reordered
-            .middleware(SecretTokenApplier)
-            .build();
-        let listener = TcpListener::bind("127.0.0.1:8002").unwrap();
-
-        app.serve(listener);
-
-        assert!(ureq::get("http://127.0.0.1:8002").call().is_err());
-    }
+    assert_eq!(
+        *log.lock().unwrap(),
+        ["A before", "B before", "B after", "A after"]
+    );
 }
 
-#[cfg(test)]
-mod route_middleware {
-    use std::net::TcpListener;
+#[test]
+fn middleware_order_specific() {
+    let log = Arc::new(Mutex::new(Vec::new()));
 
-    use lumine::{
-        Lumine, Middleware,
-        http::{StatusCode, header::AUTHORIZATION},
-    };
+    let cloned = log.clone();
 
-    struct AdminChecker;
+    let app = Lumine::builder()
+        .route_with(
+            "/",
+            |_| (),
+            move |r| {
+                r.middleware(LoggerA {
+                    log: cloned.clone(),
+                })
+                .middleware(LoggerB {
+                    log: cloned.clone(),
+                })
+            },
+        )
+        .build();
+    let listener = TcpListener::bind("127.0.0.1:8001").unwrap();
 
-    impl Middleware for AdminChecker {
-        fn handle(
-            &self,
-            request: lumine::Request,
-            next: lumine::Next,
-        ) -> lumine::Result<lumine::Response> {
-            if let Some(auth) = request.headers().get(AUTHORIZATION)
-                && auth == "ADMIN"
-            {
-                next.run(request)
-            } else {
-                let mut response = next.run(request)?;
-                *response.status_mut() = StatusCode::UNAUTHORIZED;
+    app.serve(listener);
+    ureq::get("http://127.0.0.1:8001").call().unwrap();
 
-                Ok(response)
-            }
-        }
-    }
+    assert_eq!(
+        *log.lock().unwrap(),
+        ["A before", "B before", "B after", "A after"]
+    );
+}
 
-    #[test]
-    fn test_single_middleware() {
-        let app = Lumine::builder()
-            .route_with(
-                "/admin",
-                |_| "Hello, Admin!",
-                |r| r.middleware(AdminChecker),
-            )
-            .build();
-        let listener = TcpListener::bind("127.0.0.1:8003").unwrap();
+#[test]
+fn middleware_order_specific_and_global() {
+    let log = Arc::new(Mutex::new(Vec::new()));
 
-        app.serve(listener);
+    let cloned = log.clone();
 
-        assert!(
-            ureq::get("http://127.0.0.1:8003/admin")
-                .header(AUTHORIZATION, "ADMIN")
-                .call()
-                .is_ok()
-        );
-    }
+    let app = Lumine::builder()
+        .route_with(
+            "/",
+            |_| (),
+            move |r| {
+                r.middleware(LoggerC {
+                    log: cloned.clone(),
+                })
+                .middleware(LoggerD {
+                    log: cloned.clone(),
+                })
+            },
+        )
+        .middleware(LoggerA { log: log.clone() })
+        .middleware(LoggerB { log: log.clone() })
+        .build();
+    let listener = TcpListener::bind("127.0.0.1:8002").unwrap();
+
+    app.serve(listener);
+    ureq::get("http://127.0.0.1:8002").call().unwrap();
+
+    assert_eq!(
+        *log.lock().unwrap(),
+        [
+            "A before", "B before", "C before", "D before", "D after", "C after", "B after",
+            "A after"
+        ]
+    );
+}
+
+#[test]
+fn middleware_order_specific_and_global_reversed() {
+    let log = Arc::new(Mutex::new(Vec::new()));
+
+    let cloned = log.clone();
+
+    let app = Lumine::builder()
+        .route_with(
+            "/",
+            |_| (),
+            move |r| {
+                r.middleware(LoggerC {
+                    log: cloned.clone(),
+                })
+                .middleware(LoggerD {
+                    log: cloned.clone(),
+                })
+                .route_middleware_first()
+            },
+        )
+        .middleware(LoggerA { log: log.clone() })
+        .middleware(LoggerB { log: log.clone() })
+        .build();
+    let listener = TcpListener::bind("127.0.0.1:8003").unwrap();
+
+    app.serve(listener);
+    ureq::get("http://127.0.0.1:8003").call().unwrap();
+
+    assert_eq!(
+        *log.lock().unwrap(),
+        [
+            "C before", "D before", "A before", "B before", "B after", "A after", "D after",
+            "C after"
+        ]
+    );
+}
+
+#[test]
+fn header_modification() {
+    let app = Lumine::builder()
+        .route("/", |r| {
+            assert_eq!(r.headers().get("x-test").unwrap().to_str().unwrap(), "123")
+        })
+        .middleware(HeaderModifier)
+        .build();
+
+    let listener = TcpListener::bind("127.0.0.1:8004").unwrap();
+
+    app.serve(listener);
+
+    // Check whether the response has 'x-test' header or not.
+    assert_eq!(
+        ureq::get("http://127.0.0.1:8004")
+            .call()
+            .unwrap()
+            .headers()
+            .get("x-test")
+            .unwrap(),
+        HeaderValue::from(123)
+    );
+}
+
+#[test]
+fn middleware_error() {
+    let app = Lumine::builder()
+        .route("/", |_| ())
+        .middleware(MiddlewareError)
+        .build();
+
+    let listener = TcpListener::bind("127.0.0.1:8005").unwrap();
+
+    app.serve(listener);
+
+    assert!(matches!(
+        ureq::get("http://127.0.0.1:8005").call(),
+        Err(ureq::Error::StatusCode(500))
+    ));
 }
