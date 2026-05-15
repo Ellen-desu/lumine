@@ -235,7 +235,7 @@ impl Lumine<Ready> {
             }
         });
 
-        // Returning the receiver for error handling
+        // Returning the receiver contains client's information
         rx
     }
 
