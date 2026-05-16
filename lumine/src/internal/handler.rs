@@ -105,6 +105,7 @@ fn handle_request(mut request: Request, app: &Arc<Lumine<Ready>>) -> Result<Resp
                     route,
                 };
 
+                // Prevent the app from crash by catch the panic
                 match panic::catch_unwind(AssertUnwindSafe(|| next.run(request).unwrap())) {
                     Ok(response) => response,
                     _ => http::Response::builder()
@@ -144,9 +145,9 @@ fn read_request(stream: &TcpStream) -> Result<Option<Request>> {
             break;
         }
 
-        let (name, value) = parser::parse_header(&header_line)?;
+        let (key, value) = parser::parse_headers(&header_line)?;
 
-        headers.append(name, value);
+        headers.append(key, value);
     }
 
     let body = parser::parse_body(&headers, &mut reader)?;
@@ -156,8 +157,8 @@ fn read_request(stream: &TcpStream) -> Result<Option<Request>> {
         .uri(uri)
         .version(version);
 
-    for (k, v) in headers.iter() {
-        builder = builder.header(k, v);
+    for (key, value) in headers.iter() {
+        builder = builder.header(key, value);
     }
 
     Ok(Some(builder.body(body)?))
