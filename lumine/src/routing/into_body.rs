@@ -1,9 +1,7 @@
+use crate::types::body::Body;
 use std::str::Bytes;
 
 /// Converts a value into an HTTP-compatible body.
-///
-/// `IntoBody` defines how a value can be transformed into a sequence
-/// of raw bytes (`Vec<u8>`) suitable for use as an HTTP response body.
 ///
 /// This trait serves as a boundary between high-level application types
 /// (such as strings) and the lower-level HTTP layer, which operates
@@ -12,7 +10,7 @@ use std::str::Bytes;
 /// # Design
 ///
 /// HTTP bodies are byte-oriented by nature. Rather than forcing handlers
-/// to manually convert values into `Vec<u8>`, `IntoBody` provides a small
+/// to manually convert values into [`Body`], `IntoBody` provides a small
 /// abstraction that allows common types to be returned naturally.
 ///
 /// This keeps handler code ergonomic while preserving a clear separation
@@ -50,29 +48,29 @@ use std::str::Bytes;
 ///   elsewhere.
 pub trait IntoBody {
     /// Converts the value into a vector of raw bytes.
-    fn into_body(self) -> Vec<u8>;
+    fn into_body(self) -> Body;
 }
 
 impl IntoBody for &'static str {
-    fn into_body(self) -> Vec<u8> {
+    fn into_body(self) -> Body {
         self.as_bytes().to_vec()
     }
 }
 
 impl IntoBody for String {
-    fn into_body(self) -> Vec<u8> {
+    fn into_body(self) -> Body {
         self.into_bytes()
     }
 }
 
 impl IntoBody for &String {
-    fn into_body(self) -> Vec<u8> {
+    fn into_body(self) -> Body {
         self.as_bytes().into()
     }
 }
 
 impl IntoBody for Bytes<'_> {
-    fn into_body(self) -> Vec<u8> {
+    fn into_body(self) -> Body {
         self.collect()
     }
 }
