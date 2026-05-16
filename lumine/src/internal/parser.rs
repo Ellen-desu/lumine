@@ -35,13 +35,13 @@ pub(crate) fn parse_request_line(line: &str) -> Result<(Method, Uri, Version)> {
     Ok((method, uri, version))
 }
 pub(crate) fn parse_header(line: &str) -> Result<(HeaderName, HeaderValue)> {
-    let (k, v) = line
+    let (key, value) = line
         .split_once(": ")
         .map(|(k, v)| (k.to_lowercase(), v.trim()))
         .unwrap_or_default();
 
-    let header_name = HeaderName::from_lowercase(k.as_bytes())?;
-    let header_value = HeaderValue::from_str(v)?;
+    let header_name = HeaderName::from_lowercase(key.as_bytes())?;
+    let header_value = HeaderValue::from_str(value)?;
 
     Ok((header_name, header_value))
 }
