@@ -34,10 +34,10 @@ pub(crate) fn parse_request_line(line: &str) -> Result<(Method, Uri, Version)> {
 
     Ok((method, uri, version))
 }
-pub(crate) fn parse_header(line: &str) -> Result<(HeaderName, HeaderValue)> {
-    let (key, value) = line
+pub(crate) fn parse_headers(header: &str) -> Result<(HeaderName, HeaderValue)> {
+    let (key, value) = header
         .split_once(": ")
-        .map(|(k, v)| (k.to_lowercase(), v.trim()))
+        .map(|(key, value)| (key.to_lowercase(), value.trim()))
         .unwrap_or_default();
 
     let header_name = HeaderName::from_lowercase(key.as_bytes())?;
@@ -60,4 +60,14 @@ pub(crate) fn parse_body(headers: &HeaderMap, reader: &mut BufReader<&TcpStream>
     reader.read_exact(&mut body)?;
 
     Ok(body)
+}
+
+#[cfg(feature = "bench")]
+pub fn parse_request_line_for_bench(line: &str) -> Result<(Method, Uri, Version)> {
+    parse_request_line(line)
+}
+
+#[cfg(feature = "bench")]
+pub fn parse_headers_for_bench(header: &str) -> Result<(HeaderName, HeaderValue)> {
+    parse_headers(header)
 }
