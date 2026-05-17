@@ -2,12 +2,8 @@ use crate::{
     error::Error,
     types::{body::Body, result::Result},
 };
-use http::{HeaderMap, HeaderName, HeaderValue, Method, Uri, Version, header::CONTENT_LENGTH};
-use std::{
-    io::{BufReader, Read},
-    net::TcpStream,
-    str::FromStr,
-};
+use http::{HeaderName, HeaderValue, Method, Uri, Version};
+use std::{io::BufRead, str::FromStr};
 
 pub(crate) fn parse_request_line(line: &str) -> Result<(Method, Uri, Version)> {
     let parts: Vec<&str> = line.split_whitespace().collect();
@@ -46,17 +42,8 @@ pub(crate) fn parse_headers(header: &str) -> Result<(HeaderName, HeaderValue)> {
     Ok((header_name, header_value))
 }
 
-pub(crate) fn parse_body(headers: &HeaderMap, reader: &mut BufReader<&TcpStream>) -> Result<Body> {
-    let content_len = match headers.get(CONTENT_LENGTH) {
-        Some(header_value) => {
-            let len_str = header_value.to_str().map_err(|_| Error::Parser)?;
-
-            len_str.parse::<usize>().map_err(|_| Error::Parser)?
-        }
-        _ => 0,
-    };
-
-    let mut body = vec![0u8; content_len];
+pub(crate) fn parse_body<R: BufRead>(length: usize, reader: &mut R) -> Result<Body> {
+    let mut body = vec![0u8; length];
     reader.read_exact(&mut body)?;
 
     Ok(body)
