@@ -58,3 +58,8 @@ pub fn parse_request_line_for_bench(line: &str) -> Result<(Method, Uri, Version)
 pub fn parse_headers_for_bench(header: &str) -> Result<(HeaderName, HeaderValue)> {
     parse_headers(header)
 }
+
+#[cfg(feature = "bench")]
+pub fn parse_body_for_bench<R: BufRead>(length: usize, reader: &mut R) -> Result<Body> {
+    parse_body(length, reader)
+}
