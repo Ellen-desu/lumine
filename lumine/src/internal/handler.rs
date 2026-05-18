@@ -128,28 +128,28 @@ fn handle_request(mut request: Request, app: &Arc<Lumine<Ready>>) -> Result<Resp
 
 fn read_request(app: &Arc<Lumine<Ready>>, stream: &TcpStream) -> Result<Option<Request>> {
     let mut reader = BufReader::new(stream);
+    let mut buffer = String::new();
 
     // Request line
-    let mut raw_request_line = String::new();
-    if let Ok(0) = reader.read_line(&mut raw_request_line) {
+    if let Ok(0) = reader.read_line(&mut buffer) {
         return Ok(None);
     }
 
-    let (method, uri, version) = parser::parse_request_line(&raw_request_line)?;
+    let (method, uri, version) = parser::parse_request_line(&buffer)?;
 
     // Headers
     let mut headers = HeaderMap::new();
     loop {
-        let mut header_line = String::new();
-        if let Ok(0) = reader.read_line(&mut header_line) {
+        buffer.clear();
+        if let Ok(0) = reader.read_line(&mut buffer) {
             return Ok(None);
         }
 
-        if header_line.trim().is_empty() {
+        if buffer.trim().is_empty() {
             break;
         }
 
-        let (key, value) = parser::parse_headers(&header_line)?;
+        let (key, value) = parser::parse_headers(&buffer)?;
 
         headers.append(key, value);
     }
