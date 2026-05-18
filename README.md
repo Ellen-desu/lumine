@@ -1,23 +1,25 @@
 # Lumine
 
-A **synchronous HTTP web server** written in Rust.
+A lightweight HTTP web server framework written in Rust.
 
 Lumine is designed to be:
 
-- **Fast** — Although synchronous, Lumine performs well for small to medium-scale APIs.
-- **Easy** — Simple architecture, minimal concepts, and beginner-friendly API.
+* **Fast** — Minimal overhead with a focus on practical performance.
+* **Simple** — Clean architecture, minimal concepts, and beginner-friendly API.
+* **Flexible** — Designed to evolve without unnecessary abstractions.
 
 ---
 
 ## Why Lumine?
 
-Most modern Rust web frameworks are async-first. That’s great, but not always ideal.
+Many Rust web frameworks introduce heavy abstractions or runtime complexity early.
 
 Lumine exists for cases where you want:
 
-- To **learn how an HTTP server works internally**
-- A **simple web server without async/await complexity**
-- Full control with minimal dependencies and a std-first design
+* To **learn how HTTP servers work internally**
+* A **minimal and understandable architecture**
+* Full control with a std-first design philosophy
+* A framework that stays close to how Rust actually works
 
 > Lumine focuses on clarity first, performance second, and magic never.
 
@@ -52,15 +54,7 @@ fn main() -> Result<()> {
 
     // Start serving incoming connections
     let rx = app.serve(listener);
-    
-    // ⚠️ IMPORTANT:
-    // This loop is REQUIRED.
-    //
-    // The receiver must be continuously polled to keep the
-    // internal event loop alive. If this loop is removed,
-    // the server will stop processing events properly.
-    //
-    // In short: no recv loop = dead server.
+
     while let Ok(err) = rx.recv() {
         eprintln!("Client error: {err}");
     }
@@ -91,14 +85,14 @@ cargo run --example <example-name>
 
 ## Behind the Scenes
 
-Internally, Lumine is built using:
+Internally, Lumine currently uses:
 
 * `std::net::TcpListener` for networking
-* A simple routing mechanism
-* Thread-based request handling
+* A lightweight routing mechanism
+* Internal request handling abstractions
 * An event channel for propagating client-side errors
 
-No async runtime, no hidden magic.
+The architecture may continue evolving as the project grows.
 
 ---
 
@@ -112,4 +106,4 @@ Breaking changes may occur as the API evolves.
 
 ## License
 
-This project is licensed under the [MIT License.](https://github.com/Ellen-desu/lumine/blob/main/LICENSE)
+This project is licensed under the [MIT License](https://github.com/Ellen-desu/lumine/blob/main/LICENSE).
