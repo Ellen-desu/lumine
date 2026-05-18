@@ -70,7 +70,7 @@ pub(crate) fn handle_client(
         client.status = response.status();
         let _ = tx.send(client);
 
-        let server_wants_close = should_server_close(&response);
+        let server_wants_close = response.status().is_server_error();
 
         let final_close = client_wants_close || server_wants_close;
 
@@ -240,8 +240,4 @@ fn set_default_header(response: &mut Response, should_close: bool) -> Result<()>
     }
 
     Ok(())
-}
-
-fn should_server_close(response: &Response) -> bool {
-    response.status().is_server_error()
 }
