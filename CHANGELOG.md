@@ -7,21 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Request headers limiter.
+
+## [0.4.3] - 2026-05-18
+
+### Added
+- `BodyTooLarge` & `HeadersTooLarge` enum value to `Error`.
+- Benchmark to all parsers.
+
+### Fixed
+- Read body content that exceeded the limit.
+
+### Changed
+- `parse_body` parameters.
+
 ## [0.4.2] - 2026-05-16
 
-## Added
+### Added
 - `Middleware` documentation.
 
-## Fixed
+### Fixed
 - Comment didn't match with the function return.
 - Missing `Added` section in 0.4.1 changelog.
 
-## Changed
+### Changed
 - `IntoBody` return to type alias `Body`.
 
 ## [0.4.1] - 2026-04-29
 
-## Added
+### Added
 - `Middleware` unit test.
 
 ## [0.4.0] - 2026-03-23
