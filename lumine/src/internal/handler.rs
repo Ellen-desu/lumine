@@ -1,5 +1,6 @@
 use crate::{
     application::{client::Client, lumine::Lumine, states::Ready},
+    error::Error,
     internal::parser,
     middleware::next::Next,
     types::{body::Body, request::Request, response::Response, result::Result},
@@ -23,7 +24,7 @@ pub(crate) fn handle_client(
 ) -> Result<()> {
     loop {
         let mut client = Client::default();
-        let request_result = read_request(&stream);
+        let request_result = read_request(&app, &stream);
 
         let (request, client_wants_close) = match request_result {
             Ok(Some(request)) => {
@@ -37,10 +38,19 @@ pub(crate) fn handle_client(
             }
             // Client disconnected
             Ok(None) => break,
-            Err(_) => {
-                let mut response = http::Response::builder()
-                    .status(StatusCode::BAD_REQUEST)
-                    .body(Body::default())?;
+            Err(error) => {
+                let mut response = match error {
+                    Error::BodyTooLarge => http::Response::builder()
+                        .status(StatusCode::PAYLOAD_TOO_LARGE)
+                        .body(Body::default())?,
+                    Error::HeadersTooLarge => http::Response::builder()
+                        .status(StatusCode::REQUEST_HEADER_FIELDS_TOO_LARGE)
+                        .body(Body::default())?,
+                    // Errors like parser usually because the client's fault, just give the 400 status code
+                    _ => http::Response::builder()
+                        .status(StatusCode::BAD_REQUEST)
+                        .body(Body::default())?,
+                };
 
                 response
                     .headers_mut()
@@ -64,8 +74,7 @@ pub(crate) fn handle_client(
 
         let final_close = client_wants_close || server_wants_close;
 
-        set_connection_header(&mut response, final_close)?;
-        set_default_header(&mut response)?;
+        set_default_header(&mut response, final_close)?;
 
         write_response(response, &stream)?;
 
@@ -80,38 +89,33 @@ pub(crate) fn handle_client(
 fn handle_request(mut request: Request, app: &Arc<Lumine<Ready>>) -> Result<Response> {
     let response = match app.get_route(request.uri()) {
         Some((route, params, query)) => {
-            if request.body().len() > app.max_body() {
-                http::Response::builder()
-                    .status(StatusCode::PAYLOAD_TOO_LARGE)
-                    .body(Body::default())?
+            let ext = request.extensions_mut();
+            ext.insert(params);
+            ext.insert(query);
+
+            let mut chain = Vec::new();
+
+            // Choose between route or global middleware which takes precedence
+            let iter = if route.route_middleware_first() {
+                route.middlewares().iter().chain(app.middlewares())
             } else {
-                let ext = request.extensions_mut();
-                ext.insert(params);
-                ext.insert(query);
+                app.middlewares().iter().chain(route.middlewares())
+            }
+            .map(|b| b.as_ref());
 
-                let mut chain = Vec::new();
+            chain.extend(iter);
 
-                let iter = if route.route_middleware_first() {
-                    route.middlewares().iter().chain(app.middlewares())
-                } else {
-                    app.middlewares().iter().chain(route.middlewares())
-                }
-                .map(|b| b.as_ref());
+            let next = Next {
+                middlewares: &chain,
+                route,
+            };
 
-                chain.extend(iter);
-
-                let next = Next {
-                    middlewares: &chain,
-                    route,
-                };
-
-                // Prevent the app from crash by catch the panic
-                match panic::catch_unwind(AssertUnwindSafe(|| next.run(request).unwrap())) {
-                    Ok(response) => response,
-                    _ => http::Response::builder()
-                        .status(StatusCode::INTERNAL_SERVER_ERROR)
-                        .body(Body::default())?,
-                }
+            // Start the middleware chain and catch the panic to prevent app from crash
+            match panic::catch_unwind(AssertUnwindSafe(|| next.run(request).unwrap())) {
+                Ok(response) => response,
+                _ => http::Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(Body::default())?,
             }
         }
         _ => http::Response::builder()
@@ -122,7 +126,7 @@ fn handle_request(mut request: Request, app: &Arc<Lumine<Ready>>) -> Result<Resp
     Ok(response)
 }
 
-fn read_request(stream: &TcpStream) -> Result<Option<Request>> {
+fn read_request(app: &Arc<Lumine<Ready>>, stream: &TcpStream) -> Result<Option<Request>> {
     let mut reader = BufReader::new(stream);
 
     // Request line
@@ -150,7 +154,22 @@ fn read_request(stream: &TcpStream) -> Result<Option<Request>> {
         headers.append(key, value);
     }
 
-    let body = parser::parse_body(&headers, &mut reader)?;
+    let body = match headers.get(CONTENT_LENGTH) {
+        Some(value) => {
+            let content_length = value
+                .to_str()
+                .map_err(|_| Error::Parser)?
+                .parse::<usize>()
+                .map_err(|_| Error::Parser)?;
+
+            if content_length > app.max_body() {
+                return Err(Error::BodyTooLarge);
+            }
+
+            parser::parse_body(content_length, &mut reader)?
+        }
+        _ => Body::new(),
+    };
 
     let mut builder = http::Request::builder()
         .method(method)
@@ -191,7 +210,7 @@ fn write_response(response: Response, stream: &TcpStream) -> Result<()> {
     Ok(())
 }
 
-fn set_default_header(response: &mut Response) -> Result<()> {
+fn set_default_header(response: &mut Response, should_close: bool) -> Result<()> {
     let content_length = response.body().len();
     let now = Utc::now().format("%a, %d %b %Y %H:%M:%S GMT").to_string();
 
@@ -206,14 +225,6 @@ fn set_default_header(response: &mut Response) -> Result<()> {
     header_mut.append(DATE, HeaderValue::from_str(&now)?);
     header_mut.append(CONTENT_LENGTH, HeaderValue::from(content_length));
 
-    Ok(())
-}
-
-fn should_server_close(response: &Response) -> bool {
-    response.status().is_server_error()
-}
-
-fn set_connection_header(response: &mut Response, should_close: bool) -> Result<()> {
     if response.headers().contains_key(CONNECTION) {
         return Ok(());
     }
@@ -229,4 +240,8 @@ fn set_connection_header(response: &mut Response, should_close: bool) -> Result<
     }
 
     Ok(())
+}
+
+fn should_server_close(response: &Response) -> bool {
+    response.status().is_server_error()
 }

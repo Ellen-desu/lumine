@@ -52,6 +52,12 @@ pub enum Error {
     },
     #[error("failed to parse HTTP request")]
     Parser,
+
+    #[error("body content's exceeded the limit")]
+    BodyTooLarge,
+
+    #[error("headers content's exceeded the limit")]
+    HeadersTooLarge,
 }
 
 impl From<http::Error> for Error {
