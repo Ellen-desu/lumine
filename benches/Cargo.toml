@@ -16,3 +16,18 @@ rand = "0.9"
 name = "routing"
 path = "routing.rs"
 harness = false
+
+[[bench]]
+name = "request_line"
+path = "parser/request_line.rs"
+harness = false
+
+[[bench]]
+name = "headers"
+path = "parser/headers.rs"
+harness = false
+
+[[bench]]
+name = "body"
+path = "parser/body.rs"
+harness = false
