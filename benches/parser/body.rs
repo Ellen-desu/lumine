@@ -18,12 +18,10 @@ fn benchmark(c: &mut Criterion) {
     ];
 
     for size in sizes {
-        // Simulasi body HTTP
         let data = vec![b'a'; size];
 
         c.bench_function(&format!("body_{}b", size), |b| {
             b.iter(|| {
-                // Cursor = fake stream di memory
                 let cursor = Cursor::new(black_box(&data));
 
                 let mut reader = BufReader::new(cursor);

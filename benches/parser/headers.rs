@@ -4,7 +4,6 @@ use rand::seq::SliceRandom;
 use std::hint::black_box;
 
 fn generate_headers(n: usize) -> Vec<String> {
-    // Kumpulan nama header umum HTTP
     const HEADER_NAMES: &[&str] = &[
         "Host",
         "User-Agent",
@@ -28,7 +27,6 @@ fn generate_headers(n: usize) -> Vec<String> {
         "DNT",
     ];
 
-    // Value random-ish supaya lebih realistis
     const HEADER_VALUES: &[&str] = &[
         "localhost",
         "keep-alive",
