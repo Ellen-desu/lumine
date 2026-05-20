@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Request headers limiter.
+- File sending in response.
+- `CONTRIBUTING.md` file.
+- Asynchronous runtime with Tokio.
+
+## [0.4.4] - 2026-05-18
+
+### Changed
+- Reuse single buffer to read request line and headers.
 
 ## [0.4.3] - 2026-05-18
 

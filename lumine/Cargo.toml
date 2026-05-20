@@ -1,13 +1,13 @@
 [package]
 name = "lumine"
 description = "A simple and minimal HTTP web server."
-version = "0.4.3"
+version = "0.4.4"
 edition = "2024"
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/Ellen-desu/lumine"
 categories = ["web-programming::http-server", "web-programming", "network-programming"]
-keywords = ["http", "web-server", "sync", "network", "lightweight"]
+keywords = ["http", "web-server", "network", "lightweight"]
 
 [dependencies]
 http = "1.4"
