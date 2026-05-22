@@ -1,10 +1,13 @@
+use std::net::IpAddr;
+
 use http::{Method, StatusCode, Uri};
 
 /// Represents a connected HTTP client inside **Lumine**.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Client {
     pub(crate) method: Method,
     pub(crate) status: StatusCode,
+    pub(crate) ip: IpAddr,
     pub(crate) url: Uri,
 }
 
@@ -20,5 +23,8 @@ impl Client {
     /// Returns the HTTP method used by this client.
     pub fn method(&self) -> &Method {
         &self.method
+    }
+    pub fn ip(&self) -> &IpAddr {
+        &self.ip
     }
 }
