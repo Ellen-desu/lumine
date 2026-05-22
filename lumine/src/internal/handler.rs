@@ -23,7 +23,6 @@ pub(crate) fn handle_client(
     tx: Arc<Sender<Client>>,
 ) -> Result<()> {
     loop {
-        let mut client = Client::default();
         let request_result = read_request(&app, &stream);
 
         let (request, client_wants_close) = match request_result {
@@ -39,18 +38,13 @@ pub(crate) fn handle_client(
             // Client disconnected
             Ok(None) => break,
             Err(error) => {
-                let mut response = match error {
-                    Error::BodyTooLarge => http::Response::builder()
-                        .status(StatusCode::PAYLOAD_TOO_LARGE)
-                        .body(Body::default())?,
-                    Error::HeadersTooLarge => http::Response::builder()
-                        .status(StatusCode::REQUEST_HEADER_FIELDS_TOO_LARGE)
-                        .body(Body::default())?,
-                    // Errors like parser usually because the client's fault, just give the 400 status code
-                    _ => http::Response::builder()
-                        .status(StatusCode::BAD_REQUEST)
-                        .body(Body::default())?,
-                };
+                let mut response = http::Response::builder()
+                    .status(match error {
+                        Error::BodyTooLarge => StatusCode::PAYLOAD_TOO_LARGE,
+                        Error::HeadersTooLarge => StatusCode::REQUEST_HEADER_FIELDS_TOO_LARGE,
+                        _ => StatusCode::BAD_REQUEST,
+                    })
+                    .body(Body::default())?;
 
                 response
                     .headers_mut()
@@ -62,12 +56,20 @@ pub(crate) fn handle_client(
             }
         };
 
-        client.method = request.method().clone();
-        client.url = request.uri().clone();
+        let client_method = request.method().clone();
+        let client_ip = stream.peer_addr()?.ip();
+        let client_url = request.uri().clone();
 
         let mut response = handle_request(request, &app)?;
 
-        client.status = response.status();
+        let client_status = response.status();
+
+        let client = Client {
+            method: client_method,
+            status: client_status,
+            ip: client_ip,
+            url: client_url,
+        };
         let _ = tx.send(client);
 
         let server_wants_close = response.status().is_server_error();
@@ -214,30 +216,28 @@ fn set_default_header(response: &mut Response, should_close: bool) -> Result<()>
     let content_length = response.body().len();
     let now = Utc::now().format("%a, %d %b %Y %H:%M:%S GMT").to_string();
 
-    let header_mut = response.headers_mut();
+    let headers = response.headers_mut();
 
-    if let None = header_mut.get(CONTENT_TYPE)
+    if let None = headers.get(CONTENT_TYPE)
         && content_length != 0
     {
-        header_mut.append(CONTENT_TYPE, HeaderValue::from_static("text/plain"));
+        headers.append(CONTENT_TYPE, HeaderValue::from_static("text/plain"));
     }
 
-    header_mut.append(DATE, HeaderValue::from_str(&now)?);
-    header_mut.append(CONTENT_LENGTH, HeaderValue::from(content_length));
+    headers.append(DATE, HeaderValue::from_str(&now)?);
+    headers.append(CONTENT_LENGTH, HeaderValue::from(content_length));
 
     if response.headers().contains_key(CONNECTION) {
         return Ok(());
     }
 
-    if should_close {
-        response
-            .headers_mut()
-            .insert(CONNECTION, HeaderValue::from_static("close"));
+    let (key, value) = if should_close {
+        (CONNECTION, HeaderValue::from_static("close"))
     } else {
-        response
-            .headers_mut()
-            .insert(CONNECTION, HeaderValue::from_static("keep-alive"));
-    }
+        (CONNECTION, HeaderValue::from_static("keep-alive"))
+    };
+
+    response.headers_mut().append(key, value);
 
     Ok(())
 }
