@@ -297,6 +297,11 @@ impl Lumine<Ready> {
         None
     }
 
+    #[cfg(feature = "test")]
+    pub fn get_route_test(&self, uri: &Uri) -> Option<(&dyn RouteService, Params)> {
+        self.get_route(uri)
+    }
+
     /// Get the application limits
     pub fn limits(&self) -> Limits {
         self.limits
