@@ -59,10 +59,10 @@ pub enum Error {
     #[error("body content's exceeded the limit")]
     BodyTooLarge,
 
-    #[error("headers content's exceeded the limit")]
+    #[error("headers content or total is too large")]
     HeadersTooLarge,
 
-    #[error("query string is too large")]
+    #[error("query content or total is too large")]
     QueryTooLarge,
 }
 
