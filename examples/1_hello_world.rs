@@ -19,10 +19,7 @@ use std::net::TcpListener;
 
 fn main() -> Result<()> {
     // Create application with one simple route
-    let app = Lumine::builder()
-        .max_uri_size(2)
-        .route("/", hello_handler)
-        .build();
+    let app = Lumine::builder().route("/", hello_handler).build();
 
     // Bind to localhost:8080
     let listener = TcpListener::bind("127.0.0.1:8080")?;
