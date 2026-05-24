@@ -1,0 +1,15 @@
+[package]
+name = "tests"
+description = "Tests for the Lumine HTTP web server."
+repository = "https://github.com/Ellen-desu/lumine"
+version = "0.0.0"
+publish = false
+edition = "2024"
+license = "MIT"
+
+[dependencies]
+lumine = { path = "../lumine", features = ["test"] }
+
+[[test]]
+name = "routing"
+path = "routing.rs"

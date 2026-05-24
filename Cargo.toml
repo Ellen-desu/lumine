@@ -3,7 +3,8 @@ resolver = "3"
 members = [
     "lumine",
     "benches",
-    "examples"
+    "examples",
+    "tests"
 ]
 
 [profile.dev]
