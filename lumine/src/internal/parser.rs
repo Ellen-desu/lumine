@@ -158,11 +158,6 @@ pub(crate) fn parse_body<R: BufRead>(length: usize, reader: &mut R) -> Result<Bo
 }
 
 #[cfg(feature = "bench")]
-pub fn parse_request_for_bench(limits: Limits, stream: &TcpStream) -> Result<Option<Request>> {
-    parse_request(limits, stream)
-}
-
-#[cfg(feature = "bench")]
 pub fn parse_request_line_for_bench(
     line: &str,
     max_uri_size: usize,
