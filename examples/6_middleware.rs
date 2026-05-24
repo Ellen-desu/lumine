@@ -71,13 +71,7 @@ fn main() -> Result<()> {
     println!("💡 Try: curl http://127.0.0.1:8080");
     println!("⏹️  Press Ctrl+C to stop\n");
 
-    let rx = app.serve(listener);
-
-    while let Ok(client) = rx.recv() {
-        println!("[{}] {} {}", client.status(), client.method(), client.url());
-    }
-
-    Ok(())
+    app.serve(listener)
 }
 
 /// Simple handler

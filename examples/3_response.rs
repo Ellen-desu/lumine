@@ -52,13 +52,7 @@ fn main() -> Result<()> {
     println!("\n💡 Try: curl -i http://127.0.0.1:8080/json");
     println!("⏹️  Press Ctrl+C to stop\n");
 
-    let rx = app.serve(listener);
-
-    while let Ok(client) = rx.recv() {
-        println!("[{}] {} {}", client.status(), client.method(), client.url());
-    }
-
-    Ok(())
+    app.serve(listener)
 }
 
 /// Handler: Plain text response

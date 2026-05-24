@@ -1,11 +1,5 @@
 //! Application core and type-state system.
 //!
-//! This module defines the core structures of Lumine, including:
-//!
-//! - [`Lumine`], the main HTTP application entry point
-//! - [`Client`], the request/client context returned once the server is ready
-//! - The compile-time state system used to enforce correct lifecycle usage
-//!
 //! ---
 //!
 //! ## Type-State Pattern
@@ -25,7 +19,7 @@
 //!
 //! Lumine defines two primary marker states:
 //!
-//! - [`Builder`] — configuration phase
+//! - [`Building`] — configuration phase
 //!   Routes, middleware, and server settings may still be modified.
 //!
 //! - [`Ready`] — runtime phase
@@ -35,7 +29,7 @@
 //!
 //! ## Application Lifecycle (`Lumine`)
 //!
-//! A new application always starts in the [`Builder`] state:
+//! A new application always starts in the [`Building`] state:
 //!
 //! ```rust
 //! use lumine::Lumine;
@@ -58,24 +52,9 @@
 //!
 //! ---
 //!
-//! ## Client Lifecycle (`Client`)
-//!
-//! Lumine also applies the same type-state concept to request/client metadata.
-//!
-//! A [`Client`] begins in a [`Builder`] state while request information
-//! is still being assembled internally.
-//!
-//! Once ready, it transitions into [`Client<Ready>`], where metadata becomes
-//! immutable and can be safely accessed through getter methods.
-//!
-//! This ensures request context cannot be mutated once the server begins
-//! handling it.
-//!
-//! ---
-//!
 //! ## Design Rationale
 //!
-//! By encoding lifecycle phases into the type system, Lumine provides:.map(|b| b.as_ref())
+//! By encoding lifecycle phases into the type system, Lumine provides:
 //!
 //! - Clear separation between configuration and runtime phases
 //! - Compile-time guarantees about correct API usage
@@ -85,12 +64,12 @@
 //! Internally, Lumine uses marker types and `PhantomData` to associate
 //! state information without affecting performance.
 
-pub mod client;
+pub mod limits;
 pub mod lumine;
 pub mod states;
 
 pub use self::{
-    client::Client,
+    limits::Limits,
     lumine::Lumine,
-    states::{Builder, Ready},
+    states::{Building, Ready},
 };

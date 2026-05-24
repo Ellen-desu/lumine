@@ -23,8 +23,9 @@ use std::{net::TcpListener, time::Duration};
 
 fn main() -> Result<()> {
     let app = Lumine::builder()
-        // Read and write timeout
-        .set_timeout(Duration::from_secs(5))
+        // Timeouts
+        .read_timeout(Duration::from_secs(5))
+        .write_timeout(Duration::from_secs(5))
         // Homepage
         .route("/", index_handler)
         // Static pages
@@ -47,13 +48,7 @@ fn main() -> Result<()> {
     println!("\n💡 Try: curl http://127.0.0.1:8080/api/status");
     println!("⏹️  Press Ctrl+C to stop\n");
 
-    let rx = app.serve(listener);
-
-    while let Ok(client) = rx.recv() {
-        println!("[{}] {} {}", client.status(), client.method(), client.url());
-    }
-
-    Ok(())
+    app.serve(listener)
 }
 
 /// Handler: Homepage

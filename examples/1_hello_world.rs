@@ -19,7 +19,10 @@ use std::net::TcpListener;
 
 fn main() -> Result<()> {
     // Create application with one simple route
-    let app = Lumine::builder().route("/", hello_handler).build();
+    let app = Lumine::builder()
+        .max_uri_size(2)
+        .route("/", hello_handler)
+        .build();
 
     // Bind to localhost:8080
     let listener = TcpListener::bind("127.0.0.1:8080")?;
@@ -28,16 +31,7 @@ fn main() -> Result<()> {
     println!("💡 Try: curl http://127.0.0.1:8080");
     println!("⏹️  Press Ctrl+C to stop\n");
 
-    // Start serving requests
-    let rx = app.serve(listener);
-
-    // ⚠️ IMPORTANT: This loop is required to keep server running!
-    while let Ok(client) = rx.recv() {
-        // Client object contains request metadata
-        println!("[{}] {} {}", client.status(), client.method(), client.url());
-    }
-
-    Ok(())
+    app.serve(listener)
 }
 
 /// Simple handler that returns "Hello, World!"

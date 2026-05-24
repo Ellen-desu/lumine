@@ -55,13 +55,7 @@ fn main() -> Result<()> {
     println!("     -d '{{\"name\":\"John\",\"email\":\"john@example.com\",\"age\":30}}'");
     println!("\n⏹️  Press Ctrl+C to stop\n");
 
-    let rx = app.serve(listener);
-
-    while let Ok(client) = rx.recv() {
-        println!("[{}] {} {}", client.status(), client.method(), client.url());
-    }
-
-    Ok(())
+    app.serve(listener)
 }
 
 // ============================================================================

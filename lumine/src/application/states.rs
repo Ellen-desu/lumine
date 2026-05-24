@@ -1,7 +1,7 @@
 /// Marker type indicating that the application is in the configuration phase.
 ///
 /// In this state, routes and server settings can be modified.
-pub struct Builder;
+pub struct Building;
 
 /// Marker type indicating that the application is ready to run.
 ///

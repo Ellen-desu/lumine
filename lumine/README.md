@@ -53,13 +53,7 @@ fn main() -> Result<()> {
     let listener = TcpListener::bind("127.0.0.1:8080")?;
 
     // Start serving incoming connections
-    let rx = app.serve(listener);
-
-    while let Ok(err) = rx.recv() {
-        eprintln!("Client error: {err}");
-    }
-
-    Ok(())
+    app.serve(listener)
 }
 ```
 

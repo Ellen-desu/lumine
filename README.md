@@ -53,13 +53,7 @@ fn main() -> Result<()> {
     let listener = TcpListener::bind("127.0.0.1:8080")?;
 
     // Start serving incoming connections
-    let rx = app.serve(listener);
-
-    while let Ok(err) = rx.recv() {
-        eprintln!("Client error: {err}");
-    }
-
-    Ok(())
+    app.serve(listener)
 }
 ```
 
@@ -106,4 +100,4 @@ Breaking changes may occur as the API evolves.
 
 ## License
 
-This project is licensed under the [MIT License](https://github.com/Ellen-desu/lumine/blob/main/LICENSE).
+This project is licensed under the [MIT License](LICENSE).

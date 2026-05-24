@@ -1,76 +1,123 @@
 use crate::{
     application::{
-        client::Client,
-        states::{Builder, Ready},
+        limits::Limits,
+        states::{Building, Ready},
     },
     internal::handler,
     middleware::Middleware,
     routing::{
-        into_response::IntoResponse, params::Params, path::Path, query::Query, route::Route,
+        into_response::IntoResponse, params::Params, path::Path, route::Route,
         route_service::RouteService,
     },
-    types::request::Request,
+    types::{request::Request, result::Result},
 };
 use http::Uri;
-use std::{
-    marker::PhantomData,
-    net::TcpListener,
-    sync::{
-        Arc,
-        mpsc::{self, Receiver},
-    },
-    thread,
-    time::Duration,
-};
+use std::{marker::PhantomData, net::TcpListener, sync::Arc, thread, time::Duration};
 
 /// The main HTTP application structure.
 ///
 /// `Lumine` uses a compile-time state system to ensure correct API usage.
-/// During the `Builder` state, routes and configuration can be added.
+/// During the `Building` state, routes and configuration can be added.
 /// Once built, the application enters the `Ready` state and can be served.
 ///
 /// This design prevents invalid usage (such as modifying routes after
 /// the server has started) at compile time.
-pub struct Lumine<State = Builder> {
-    routes: Vec<Box<dyn RouteService>>,
-    timeout: Option<Duration>,
-    middlewares: Vec<Box<dyn Middleware>>,
-    max_body: usize,
+pub struct Lumine<State = Building> {
+    // Limits
+    pub(crate) limits: Limits,
+
+    // Routes and middlewares
+    pub(crate) routes: Vec<Box<dyn RouteService>>,
+    pub(crate) middlewares: Vec<Box<dyn Middleware>>,
+
+    // Timeouts
+    pub(crate) read_timeout: Duration,
+    pub(crate) write_timeout: Duration,
+
     _state: PhantomData<State>,
 }
 
 impl Lumine {
     /// Creates a new Lumine application in the configuration phase.
     ///
-    /// The returned application is in the `Builder` state, allowing routes
+    /// The returned application is in the [`Building`] state, allowing routes
     /// and server settings to be configured. This is the only state where
     /// modification is permitted.
-    pub fn builder() -> Lumine<Builder> {
+    pub fn builder() -> Lumine<Building> {
         Lumine {
+            limits: Limits::default(),
+
             routes: Vec::new(),
-            timeout: None,
             middlewares: Vec::new(),
-            max_body: 1024, // 1KB
-            _state: PhantomData::<Builder>,
+
+            read_timeout: Duration::from_secs(10),
+            write_timeout: Duration::from_secs(10),
+
+            _state: PhantomData,
         }
     }
 }
 
-/// Same as `Lumine::get_route` method but only for performance testing.
-impl Lumine<Builder> {
+impl Lumine<Building> {
     /// Finalizes the application configuration.
     ///
-    /// This method transitions the application from the `Builder` state
-    /// into the `Ready` state. After calling this method, routes and
+    /// This method transitions the application from the [`Building`] state
+    /// into the [`Ready`] state. After calling this method, routes and
     /// configuration can no longer be modified.
     pub fn build(self) -> Lumine<Ready> {
         Lumine {
+            limits: self.limits,
+
             routes: self.routes,
-            timeout: self.timeout,
             middlewares: self.middlewares,
-            max_body: self.max_body,
-            _state: PhantomData::<Ready>,
+
+            read_timeout: self.read_timeout,
+            write_timeout: self.write_timeout,
+
+            _state: PhantomData,
         }
+    }
+
+    /// Specifies the limits for the application.
+    pub fn limits(mut self, limits: Limits) -> Self {
+        self.limits = limits;
+        self
+    }
+
+    /// Specifies maximum uri size in bytes.
+    pub fn max_uri_size(mut self, max: usize) -> Self {
+        self.limits.max_uri_size = max;
+        self
+    }
+
+    /// Specifies maximum headers size in bytes.
+    pub fn max_headers_size(mut self, max: usize) -> Self {
+        self.limits.max_headers_size = max;
+        self
+    }
+
+    /// Specifies maximum headers count.
+    pub fn max_headers_count(mut self, max: usize) -> Self {
+        self.limits.max_headers_count = max;
+        self
+    }
+
+    /// Specifies maximum query size in bytes.
+    pub fn max_query_size(mut self, max: usize) -> Self {
+        self.limits.max_query_size = max;
+        self
+    }
+
+    /// Specifies maximum query count.
+    pub fn max_query_count(mut self, max: usize) -> Self {
+        self.limits.max_query_count = max;
+        self
+    }
+
+    /// Specifies maximum body size in bytes.
+    pub fn max_body_size(mut self, max: usize) -> Self {
+        self.limits.max_body_size = max;
+        self
     }
 
     /// Registers a new route and its handler.
@@ -134,11 +181,14 @@ impl Lumine<Builder> {
         F: Fn(Request) -> R + Send + Sync + 'static,
         R: IntoResponse,
     {
+        if path.len() > self.limits.max_uri_size {
+            panic!("URI too long");
+        }
+
         let path = Path::from(path);
-        for route in &self.routes {
-            if route.is_duplicated(&path) {
-                panic!("Conflicting routes");
-            }
+
+        if self.routes.iter().any(|r| r.is_duplicated(&path)) {
+            panic!("Conflicting routes");
         }
 
         self.routes.push(Box::new(Route {
@@ -153,7 +203,7 @@ impl Lumine<Builder> {
 
     /// Registers a route with additional per-route configuration.
     ///
-    /// This method behaves similarly to [Lumine::route], but allows the caller
+    /// This method behaves similarly to [`Lumine::route`], but allows the caller
     /// to modify the constructed route before it is registered.
     pub fn route_with<F, R, W>(mut self, path: &'static str, handler: F, with: W) -> Self
     where
@@ -185,21 +235,29 @@ impl Lumine<Builder> {
         self
     }
 
-    /// Specifies maximum body size in bytes.
-    pub fn max_body_size(mut self, max: usize) -> Self {
-        self.max_body = max;
-        self
-    }
-    /// Set read and write `TcpStream` timeout.
+    /// Set read `TcpStream` timeout.
     ///
     /// # Panics
     ///
     /// Panics if the zero [`Duration`] is passed to this method.
-    pub fn set_timeout(mut self, duration: Duration) -> Self {
+    pub fn read_timeout(mut self, duration: Duration) -> Self {
         if duration.is_zero() {
             panic!("The timeout duration can't be zero.");
         }
-        self.timeout = Some(duration);
+        self.read_timeout = duration;
+        self
+    }
+
+    /// Set write `TcpStream` timeout.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the zero [`Duration`] is passed to this method.
+    pub fn write_timeout(mut self, duration: Duration) -> Self {
+        if duration.is_zero() {
+            panic!("The timeout duration can't be zero.");
+        }
+        self.write_timeout = duration;
         self
     }
 }
@@ -209,70 +267,68 @@ impl Lumine<Ready> {
     ///
     /// This method consumes the application in the `Ready` state and begins
     /// accepting connections from the provided `TcpListener`.
-    ///
-    /// The returned [`Receiver`] **must** be continuously polled to keep the
-    /// internal event loop alive. Dropping or ignoring it will cause the
-    /// server to stop processing events.
-    pub fn serve(self, listener: TcpListener) -> Receiver<Client> {
-        let (tx, rx) = mpsc::channel();
+    pub fn serve(self, listener: TcpListener) -> Result<()> {
+        let app = Arc::new(self);
 
-        thread::spawn(move || {
-            let app = Arc::new(self);
-            let tx = Arc::new(tx);
+        for stream_result in listener.incoming() {
+            let app = Arc::clone(&app);
 
-            for stream_result in listener.incoming() {
-                let app = Arc::clone(&app);
-                let tx = Arc::clone(&tx);
+            if let Ok(stream) = stream_result {
+                stream.set_read_timeout(Some(app.read_timeout))?;
+                stream.set_write_timeout(Some(app.write_timeout))?;
 
-                if let Ok(stream) = stream_result {
-                    let _ = stream.set_read_timeout(app.timeout);
-                    let _ = stream.set_write_timeout(app.timeout);
-
-                    thread::spawn(move || {
-                        let _ = handler::handle_client(app, stream, tx);
-                    });
-                }
-            }
-        });
-
-        // Returning the receiver contains client's information
-        rx
-    }
-
-    pub(crate) fn get_route(&self, uri: &Uri) -> Option<(&dyn RouteService, Params, Query)> {
-        let mut query = Query::default();
-
-        if let Some(raw_query) = uri.query() {
-            for (key, value) in form_urlencoded::parse(raw_query.as_bytes()).into_owned() {
-                query
-                    .entry(key.to_string())
-                    .or_default()
-                    .push(value.to_string());
+                thread::spawn(move || {
+                    let _ = handler::handle_client(app, stream);
+                });
             }
         }
 
+        Ok(())
+    }
+
+    pub(crate) fn get_route(&self, uri: &Uri) -> Option<(&dyn RouteService, Params)> {
         let path_parts = Path::from(uri.path());
         for route in &self.routes {
             if let Some(params) = route.matches(&path_parts) {
-                return Some((route.as_ref(), params, query));
+                return Some((route.as_ref(), params));
             }
         }
 
         None
     }
 
-    pub(crate) fn middlewares(&self) -> &[Box<dyn Middleware>] {
-        &self.middlewares
+    /// Get the application limits
+    pub fn limits(&self) -> Limits {
+        self.limits
     }
 
-    /// Same as `Lumine::get_route` method but only for performance testing.
-    #[cfg(feature = "bench")]
-    pub fn get_route_for_bench(&self, uri: &Uri) -> Option<(&dyn RouteService, Params, Query)> {
-        self.get_route(uri)
+    /// Get the application maximum request line that have been set
+    pub fn max_uri_size(&self) -> usize {
+        self.limits.max_uri_size
+    }
+
+    /// Get the application maximum query size that have been set
+    pub fn max_query_size(&self) -> usize {
+        self.limits.max_query_size
+    }
+
+    /// Get the application maximum headers size that have been set
+    pub fn max_headers_size(&self) -> usize {
+        self.limits.max_headers_size
+    }
+
+    /// Get the application maximum headers count that have been set
+    pub fn max_headers_count(&self) -> usize {
+        self.limits.max_headers_count
     }
 
     /// Get the application maximum body that have been set
-    pub fn max_body(&self) -> usize {
-        self.max_body
+    pub fn max_body_size(&self) -> usize {
+        self.limits.max_body_size
+    }
+
+    #[cfg(feature = "bench")]
+    pub fn get_route_for_bench(&self, uri: &Uri) -> Option<(&dyn RouteService, Params)> {
+        self.get_route(uri)
     }
 }

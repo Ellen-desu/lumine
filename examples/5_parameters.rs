@@ -61,13 +61,7 @@ fn main() -> Result<()> {
     println!("   curl \"http://127.0.0.1:8080/users/10/posts?sort=date\"");
     println!("\n⏹️  Press Ctrl+C to stop\n");
 
-    let rx = app.serve(listener);
-
-    while let Ok(client) = rx.recv() {
-        println!("[{}] {} {}", client.status(), client.method(), client.url());
-    }
-
-    Ok(())
+    app.serve(listener)
 }
 
 // ============================================================================
