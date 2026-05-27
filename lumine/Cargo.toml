@@ -14,6 +14,7 @@ http = "1.4"
 form_urlencoded = "1.2"
 thiserror = "2.0"
 chrono = { version = "0.4", default-features = false, features = ["now"] }
+infer = "0.19"
 
 [features]
 bench = []
