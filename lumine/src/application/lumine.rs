@@ -265,8 +265,8 @@ impl Lumine<Building> {
 impl Lumine<Ready> {
     /// Starts serving incoming HTTP connections.
     ///
-    /// This method consumes the application in the `Ready` state and begins
-    /// accepting connections from the provided `TcpListener`.
+    /// This method consumes the application in the [`Ready`] state and begins
+    /// accepting connections from the provided [`TcpListener`].
     pub fn serve(self, listener: TcpListener) -> Result<()> {
         let app = Arc::new(self);
 
@@ -286,6 +286,7 @@ impl Lumine<Ready> {
         Ok(())
     }
 
+    /// Returns the route and parameters that matches the given URI, if one exists.
     pub(crate) fn get_route(&self, uri: &Uri) -> Option<(&dyn RouteService, Params)> {
         let path_parts = Path::from(uri.path());
         for route in &self.routes {
@@ -295,11 +296,6 @@ impl Lumine<Ready> {
         }
 
         None
-    }
-
-    #[cfg(feature = "test")]
-    pub fn get_route_test(&self, uri: &Uri) -> Option<(&dyn RouteService, Params)> {
-        self.get_route(uri)
     }
 
     /// Get the application limits
@@ -334,6 +330,11 @@ impl Lumine<Ready> {
 
     #[cfg(feature = "bench")]
     pub fn get_route_for_bench(&self, uri: &Uri) -> Option<(&dyn RouteService, Params)> {
+        self.get_route(uri)
+    }
+
+    #[cfg(feature = "test")]
+    pub fn get_route_test(&self, uri: &Uri) -> Option<(&dyn RouteService, Params)> {
         self.get_route(uri)
     }
 }

@@ -3,18 +3,24 @@
 mod internal;
 
 pub mod application;
+pub mod attachment;
+pub mod body;
 pub mod error;
 pub mod middleware;
 pub mod routing;
+pub mod stream;
 pub mod types;
+pub mod utils;
 
 #[doc(inline)]
 pub use crate::{
     application::Lumine,
+    body::Body,
     error::Error,
     middleware::{Middleware, Next},
     routing::{IntoResponse, Params, Path, Query, Route},
-    types::{Body, Request, Response, Result},
+    types::{Request, Response, Result},
+    utils::set_headers::SetHeaders,
 };
 
 #[cfg(feature = "bench")]

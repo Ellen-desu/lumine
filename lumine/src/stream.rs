@@ -2,6 +2,10 @@ use crate::types::result::Result;
 
 pub trait Stream {
     fn next_chunk(&mut self, buffer: &mut [u8]) -> Result<usize>;
+
+    fn size_hint(&self) -> Option<usize> {
+        None
+    }
 }
 
 impl<T: Stream + ?Sized> Stream for Box<T> {

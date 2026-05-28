@@ -2,7 +2,7 @@ use crate::{
     application::limits::Limits,
     error::Error,
     routing::query::Query,
-    types::{body::Body, request::Request, result::Result},
+    types::{request::Request, result::Result},
 };
 use http::{HeaderMap, HeaderName, HeaderValue, Method, Uri, Version, header};
 use std::{
@@ -20,12 +20,7 @@ pub(crate) fn parse_request(limits: Limits, stream: &TcpStream) -> Result<Option
         return Ok(None);
     }
 
-    let (method, uri, version, query) = parse_request_line(
-        &buffer,
-        limits.max_uri_size,
-        limits.max_query_size,
-        limits.max_query_count,
-    )?;
+    let (method, uri, version, query) = parse_request_line(&buffer, limits)?;
 
     // Headers
     let mut headers = HeaderMap::new();
@@ -43,7 +38,7 @@ pub(crate) fn parse_request(limits: Limits, stream: &TcpStream) -> Result<Option
             break;
         }
 
-        let (key, value) = parse_headers(&buffer, limits.max_headers_size)?;
+        let (key, value) = parse_headers(&buffer, limits)?;
 
         headers.append(key, value);
     }
@@ -62,7 +57,7 @@ pub(crate) fn parse_request(limits: Limits, stream: &TcpStream) -> Result<Option
 
             parse_body(content_length, &mut reader)?
         }
-        _ => Body::new(),
+        _ => Vec::new(),
     };
 
     let mut builder = http::Request::builder()
@@ -82,9 +77,7 @@ pub(crate) fn parse_request(limits: Limits, stream: &TcpStream) -> Result<Option
 
 pub(crate) fn parse_request_line(
     line: &str,
-    max_uri_size: usize,
-    max_query_size: usize,
-    max_query_count: usize,
+    limits: Limits,
 ) -> Result<(Method, Uri, Version, Query)> {
     let parts: Vec<&str> = line.split_whitespace().collect();
 
@@ -96,7 +89,7 @@ pub(crate) fn parse_request_line(
     let method = Method::from_str(parts[0])?;
 
     let uri = Uri::from_str(parts[1])?;
-    if uri.path().len() > max_uri_size {
+    if uri.path().len() > limits.max_uri_size {
         return Err(Error::UriTooLarge);
     }
 
@@ -115,9 +108,9 @@ pub(crate) fn parse_request_line(
 
     if let Some(query_str) = uri.query() {
         for (key, value) in form_urlencoded::parse(query_str.as_bytes()).into_owned() {
-            if key.len() > max_query_size
-                || value.len() > max_query_size
-                || query.len() > max_query_count
+            if key.len() > limits.max_query_size
+                || value.len() > limits.max_query_size
+                || query.len() > limits.max_query_count
             {
                 return Err(Error::QueryTooLarge);
             }
@@ -131,11 +124,8 @@ pub(crate) fn parse_request_line(
     Ok((method, uri, version, query))
 }
 
-pub(crate) fn parse_headers(
-    header: &str,
-    max_headers_size: usize,
-) -> Result<(HeaderName, HeaderValue)> {
-    if header.len() > max_headers_size {
+pub(crate) fn parse_headers(header: &str, limits: Limits) -> Result<(HeaderName, HeaderValue)> {
+    if header.len() > limits.max_headers_size {
         return Err(Error::HeadersTooLarge);
     }
 
@@ -150,32 +140,24 @@ pub(crate) fn parse_headers(
     Ok((header_name, header_value))
 }
 
-pub(crate) fn parse_body<R: BufRead>(length: usize, reader: &mut R) -> Result<Body> {
-    let mut body = vec![0u8; length];
-    reader.read_exact(&mut body)?;
+pub(crate) fn parse_body<R: BufRead>(length: usize, reader: &mut R) -> Result<Vec<u8>> {
+    let mut bytes = vec![0u8; length];
+    reader.read_exact(&mut bytes)?;
 
-    Ok(body)
+    Ok(bytes)
 }
 
 #[cfg(feature = "bench")]
-pub fn parse_request_line_for_bench(
-    line: &str,
-    max_uri_size: usize,
-    max_query_size: usize,
-    max_query_count: usize,
-) -> Result<(Method, Uri, Version, Query)> {
-    parse_request_line(line, max_uri_size, max_query_size, max_query_count)
+pub fn parse_request_line_for_bench(line: &str) -> Result<(Method, Uri, Version, Query)> {
+    parse_request_line(line, Limits::default())
 }
 
 #[cfg(feature = "bench")]
-pub fn parse_headers_for_bench(
-    header: &str,
-    max_headers_size: usize,
-) -> Result<(HeaderName, HeaderValue)> {
-    parse_headers(header, max_headers_size)
+pub fn parse_headers_for_bench(header: &str) -> Result<(HeaderName, HeaderValue)> {
+    parse_headers(header, Limits::default())
 }
 
 #[cfg(feature = "bench")]
-pub fn parse_body_for_bench<R: BufRead>(length: usize, reader: &mut R) -> Result<Body> {
+pub fn parse_body_for_bench<R: BufRead>(length: usize, reader: &mut R) -> Result<Vec<u8>> {
     parse_body(length, reader)
 }

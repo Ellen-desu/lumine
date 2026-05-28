@@ -33,21 +33,28 @@ impl DefaultHeaders for Response {
             Body::Empty => {
                 parts.headers.insert(CONTENT_LENGTH, 0.into());
             }
-            Body::Bytes(_) => {
-                parts.headers.insert(CONTENT_LENGTH, 0.into());
+            Body::Bytes(bytes) => {
+                parts.headers.insert(CONTENT_LENGTH, bytes.len().into());
                 parts
                     .headers
                     .entry(CONTENT_TYPE)
                     .or_insert(HeaderValue::from_static("text/plain"));
             }
-            _ => {
+            Body::Stream(stream) => {
+                if let Some(length) = stream.size_hint() {
+                    parts
+                        .headers
+                        .insert(CONTENT_LENGTH, HeaderValue::from_str(&length.to_string())?);
+                } else {
+                    parts
+                        .headers
+                        .insert(TRANSFER_ENCODING, HeaderValue::from_static("chunked"));
+                }
+
                 parts
                     .headers
                     .entry(CONTENT_TYPE)
                     .or_insert(HeaderValue::from_static("application/octet-stream"));
-                parts
-                    .headers
-                    .insert(TRANSFER_ENCODING, HeaderValue::from_static("chunked"));
             }
         }
 

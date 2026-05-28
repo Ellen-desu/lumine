@@ -16,7 +16,6 @@
 //!
 //! The most important aliases defined in this module are:
 //!
-//! - [`Body`]: The concrete type used for HTTP message bodies.
 //! - [`Request`]: The request type used by handlers and routing.
 //! - [`Response`]: The response type produced by handlers and the server.
 //! - [`Result`]: The standard result type used across Lumine.
@@ -28,15 +27,15 @@
 //! # Design notes
 //!
 //! - HTTP is fundamentally byte-oriented, which is reflected in the
-//!   definition of [`Body`].
+//!   definition of `DynBody`.
 //! - Requests and responses are aliases over `http` crate types to
 //!   avoid reimplementing low-level HTTP semantics.
 //! - The [`Result`] alias ensures a single error type is used
 //!   throughout the framework.
 
-pub mod body;
+pub mod dynbody;
 pub mod request;
 pub mod response;
 pub mod result;
 
-pub use self::{body::Body, request::Request, response::Response, result::Result};
+pub use self::{request::Request, response::Response, result::Result};

@@ -1,15 +1,14 @@
 use crate::{
     application::{lumine::Lumine, states::Ready},
+    body::Body,
     error::Error,
     internal::parser,
     middleware::next::Next,
-    types::{body::Body, request::Request, response::Response, result::Result},
+    stream::Stream,
+    types::{request::Request, response::Response, result::Result},
+    utils::default_headers::DefaultHeaders,
 };
-use chrono::Utc;
-use http::{
-    HeaderValue, StatusCode,
-    header::{CONNECTION, CONTENT_LENGTH, CONTENT_TYPE, DATE},
-};
+use http::{HeaderValue, StatusCode, header::CONNECTION};
 use std::{
     io::{BufWriter, Write},
     net::TcpStream,
@@ -41,7 +40,7 @@ pub(crate) fn handle_client(app: Arc<Lumine<Ready>>, stream: TcpStream) -> Resul
                         Error::BodyTooLarge => StatusCode::PAYLOAD_TOO_LARGE,
                         _ => StatusCode::BAD_REQUEST,
                     })
-                    .body(Body::default())?;
+                    .body(Body::Empty)?;
 
                 response
                     .headers_mut()
@@ -53,13 +52,8 @@ pub(crate) fn handle_client(app: Arc<Lumine<Ready>>, stream: TcpStream) -> Resul
             }
         };
 
-        let mut response = handle_request(request, &app)?;
-
-        let server_wants_close = response.status().is_server_error();
-
-        let final_close = client_wants_close || server_wants_close;
-
-        set_default_header(&mut response, final_close)?;
+        let (response, final_close) =
+            handle_request(request, &app)?.set_default_headers(client_wants_close)?;
 
         write_response(response, &stream)?;
 
@@ -70,7 +64,6 @@ pub(crate) fn handle_client(app: Arc<Lumine<Ready>>, stream: TcpStream) -> Resul
 
     Ok(())
 }
-
 
 fn handle_request(mut request: Request, app: &Arc<Lumine<Ready>>) -> Result<Response> {
     let response = match app.get_route(request.uri()) {
@@ -99,12 +92,12 @@ fn handle_request(mut request: Request, app: &Arc<Lumine<Ready>>) -> Result<Resp
                 Ok(response) => response,
                 _ => http::Response::builder()
                     .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(Body::default())?,
+                    .body(Body::Empty)?,
             }
         }
         _ => http::Response::builder()
             .status(StatusCode::NOT_FOUND)
-            .body(Body::default())?,
+            .body(Body::Empty)?,
     };
 
     Ok(response)
@@ -127,42 +120,64 @@ fn write_response(response: Response, stream: &TcpStream) -> Result<()> {
     }
 
     // End of headers
-    write!(writer, "\r\n")?;
+    writer.write_all(b"\r\n")?;
 
     // Write body to the stream
-    writer.write_all(response.body())?;
+    match response.into_body() {
+        Body::Bytes(bytes) => {
+            writer.write_all(&bytes)?;
+        }
+        Body::Stream(stream) => {
+            if stream.size_hint().is_some() {
+                write_body_static(stream, &mut writer)?;
+            } else {
+                write_body_chunked(stream, &mut writer)?;
+            }
+        }
+        _ => {}
+    };
 
     writer.flush()?;
 
     Ok(())
 }
 
-fn set_default_header(response: &mut Response, should_close: bool) -> Result<()> {
-    let content_length = response.body().len();
-    let now = Utc::now().format("%a, %d %b %Y %H:%M:%S GMT").to_string();
+fn write_body_chunked<S: Stream>(
+    mut bytes_stream: S,
+    writer: &mut BufWriter<&TcpStream>,
+) -> Result<()> {
+    let mut buffer = [0u8; 8192];
 
-    let headers = response.headers_mut();
+    loop {
+        let n = bytes_stream.next_chunk(&mut buffer)?;
+        if n == 0 {
+            break;
+        }
 
-    if let None = headers.get(CONTENT_TYPE)
-        && content_length != 0
-    {
-        headers.append(CONTENT_TYPE, HeaderValue::from_static("text/plain"));
+        write!(writer, "{n:x}\r\n")?;
+        writer.write_all(&buffer[..n])?;
+        writer.write_all(b"\r\n")?;
     }
 
-    headers.append(DATE, HeaderValue::from_str(&now)?);
-    headers.append(CONTENT_LENGTH, HeaderValue::from(content_length));
+    writer.write_all(b"0\r\n\r\n")?;
 
-    if response.headers().contains_key(CONNECTION) {
-        return Ok(());
+    Ok(())
+}
+
+fn write_body_static<S: Stream>(
+    mut bytes_stream: S,
+    writer: &mut BufWriter<&TcpStream>,
+) -> Result<()> {
+    let mut buffer = [0u8; 8192];
+
+    loop {
+        let n = bytes_stream.next_chunk(&mut buffer)?;
+        if n == 0 {
+            break;
+        }
+
+        writer.write_all(&buffer[..n])?;
     }
-
-    let (key, value) = if should_close {
-        (CONNECTION, HeaderValue::from_static("close"))
-    } else {
-        (CONNECTION, HeaderValue::from_static("keep-alive"))
-    };
-
-    response.headers_mut().append(key, value);
 
     Ok(())
 }

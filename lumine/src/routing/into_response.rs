@@ -1,8 +1,12 @@
 use crate::{
-    routing::into_body::IntoBody,
-    types::{body::Body, response::Response},
+    attachment::Attachment, body::Body, routing::into_body::IntoBody, types::response::Response,
+    utils::set_headers::SetHeaders,
 };
-use http::{HeaderMap, Result, StatusCode};
+use http::{
+    HeaderMap, HeaderValue, Result, StatusCode,
+    header::{CONTENT_DISPOSITION, CONTENT_TYPE},
+};
+use std::io::{self, ErrorKind};
 
 /// Converts a value into an HTTP response.
 ///
@@ -57,7 +61,7 @@ pub trait IntoResponse {
 
 impl IntoResponse for () {
     fn into_response(self) -> Result<Response> {
-        http::Response::builder().body(Body::default())
+        http::Response::builder().body(Body::Empty)
     }
 }
 
@@ -77,45 +81,37 @@ where
     B: IntoBody,
 {
     fn into_response(self) -> Result<Response> {
+        let builder = http::Response::builder();
+
         if !(100..=599).contains(&self.0) {
-            return http::Response::builder()
+            return builder
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::new());
+                .body(Body::Empty);
         }
 
-        http::Response::builder()
-            .status(self.0)
-            .body(self.1.into_body())
+        builder.status(self.0).body(self.1.into_body())
     }
 }
 
 impl IntoResponse for (StatusCode, HeaderMap) {
     fn into_response(self) -> Result<Response> {
-        let mut builder = http::Response::builder().status(self.0);
-
-        for (key, value) in self.1.iter() {
-            builder = builder.header(key, value);
-        }
-
-        builder.body(Body::default())
+        http::Response::builder()
+            .status(self.0)
+            .headers(&self.1)
+            .body(Body::Empty)
     }
 }
 
 impl IntoResponse for (u16, HeaderMap) {
     fn into_response(self) -> Result<Response> {
+        let builder = http::Response::builder();
         if !(100..=599).contains(&self.0) {
             return http::Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::new());
+                .body(Body::Empty);
         }
 
-        let mut builder = http::Response::builder().status(self.0);
-
-        for (key, value) in self.1.iter() {
-            builder = builder.header(key, value);
-        }
-
-        builder.body(Body::new())
+        builder.headers(&self.1).status(self.0).body(Body::Empty)
     }
 }
 
@@ -124,13 +120,9 @@ where
     B: IntoBody,
 {
     fn into_response(self) -> Result<Response> {
-        let mut builder = http::Response::builder();
-
-        for (key, value) in self.0.iter() {
-            builder = builder.header(key, value);
-        }
-
-        builder.body(self.1.into_body())
+        http::Response::builder()
+            .headers(&self.0)
+            .body(self.1.into_body())
     }
 }
 
@@ -139,13 +131,10 @@ where
     B: IntoBody,
 {
     fn into_response(self) -> Result<Response> {
-        let mut builder = http::Response::builder().status(self.0);
-
-        for (key, value) in self.1.iter() {
-            builder = builder.header(key, value);
-        }
-
-        builder.body(self.2.into_body())
+        http::Response::builder()
+            .status(self.0)
+            .headers(&self.1)
+            .body(self.2.into_body())
     }
 }
 
@@ -154,31 +143,24 @@ where
     B: IntoBody,
 {
     fn into_response(self) -> Result<Response> {
+        let builder = http::Response::builder();
+
         if !(100..=599).contains(&self.0) {
-            return http::Response::builder()
+            return builder
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::new());
+                .body(Body::Empty);
         }
 
-        let mut builder = http::Response::builder().status(self.0);
-
-        for (key, value) in self.1.iter() {
-            builder = builder.header(key, value);
-        }
-
-        builder.body(self.2.into_body())
-    }
-}
-
-impl IntoResponse for Vec<u8> {
-    fn into_response(self) -> Result<Response> {
-        http::Response::builder().body(self)
+        builder
+            .headers(&self.1)
+            .status(self.0)
+            .body(self.2.into_body())
     }
 }
 
 impl IntoResponse for StatusCode {
     fn into_response(self) -> Result<Response> {
-        http::Response::builder().status(self).body(Body::default())
+        http::Response::builder().status(self).body(Body::Empty)
     }
 }
 
@@ -193,12 +175,46 @@ where
 
 impl IntoResponse for u16 {
     fn into_response(self) -> Result<Response> {
+        let builder = http::Response::builder();
         if !(100..=599).contains(&self) {
-            return http::Response::builder()
+            return builder
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::new());
+                .body(Body::Empty);
         }
 
-        http::Response::builder().status(self).body(Body::new())
+        builder.status(self).body(Body::Empty)
+    }
+}
+
+impl IntoResponse for io::Result<Attachment> {
+    fn into_response(self) -> Result<Response> {
+        let mut builder = http::Response::builder();
+
+        match self {
+            Ok(file) => {
+                // Automatically set content type to "application/octet-stream" in `DefaultHeaders::set_default_headers`.
+                // So, None value can be ignored.
+                if let Some(info) = file.info {
+                    builder =
+                        builder.header(CONTENT_TYPE, HeaderValue::from_static(info.mime_type()));
+                };
+
+                builder = builder.header(
+                    CONTENT_DISPOSITION,
+                    HeaderValue::from_str(&format!("attachment; filename={}", file.filename))?,
+                );
+
+                builder.body(Body::Stream(Box::new(file)))
+            }
+            Err(error) => {
+                let status = match error.kind() {
+                    ErrorKind::NotFound => StatusCode::NOT_FOUND,
+                    ErrorKind::PermissionDenied => StatusCode::FORBIDDEN,
+                    _ => StatusCode::INTERNAL_SERVER_ERROR,
+                };
+
+                builder.status(status).body(Body::Empty)
+            }
+        }
     }
 }

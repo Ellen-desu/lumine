@@ -12,6 +12,7 @@ use crate::{stream::Stream, types::result::Result};
 pub struct Attachment {
     pub(crate) reader: BufReader<File>,
     pub(crate) filename: &'static str,
+    pub(crate) length: usize,
     pub(crate) info: Option<Type>,
 }
 
@@ -20,12 +21,14 @@ impl Attachment {
         let path = path.as_ref();
 
         let file = File::open(path)?;
+        let length = file.metadata()?.len() as usize;
         let reader = BufReader::new(file);
         let info = infer::get_from_path(path)?;
 
         Ok(Self {
             reader,
             filename,
+            length,
             info,
         })
     }
@@ -48,5 +51,9 @@ impl DerefMut for Attachment {
 impl Stream for Attachment {
     fn next_chunk(&mut self, buffer: &mut [u8]) -> Result<usize> {
         Ok(self.reader.read(buffer)?)
+    }
+
+    fn size_hint(&self) -> Option<usize> {
+        Some(self.length)
     }
 }

@@ -1,4 +1,4 @@
-use crate::types::body::Body;
+use crate::{body::Body, types::dynbody::DynBody};
 use std::str::Bytes;
 
 /// Converts a value into an HTTP-compatible body.
@@ -10,7 +10,7 @@ use std::str::Bytes;
 /// # Design
 ///
 /// HTTP bodies are byte-oriented by nature. Rather than forcing handlers
-/// to manually convert values into [`Body`], `IntoBody` provides a small
+/// to manually convert values into [`Body`], [`IntoBody`] provides a small
 /// abstraction that allows common types to be returned naturally.
 ///
 /// This keeps handler code ergonomic while preserving a clear separation
@@ -30,47 +30,49 @@ use std::str::Bytes;
 /// Additional implementations (e.g. borrowed strings, byte buffers,
 /// or custom types) can be added without changing handler signatures.
 ///
-/// # Example
-///
-/// ```rust
-/// use lumine::routing::into_body::IntoBody;
-///
-/// let body = "Hello, world!".into_body();
-///
-/// assert_eq!(body, b"Hello, world!");
-/// ```
-///
 /// # Notes
 ///
-/// - `IntoBody` does not perform any content-type detection or encoding
+/// - [`IntoBody`] does not perform any content-type detection or encoding
 ///   beyond producing raw bytes.
 /// - Higher-level concerns such as headers and status codes are handled
 ///   elsewhere.
 pub trait IntoBody {
     /// Converts the value into a vector of raw bytes.
-    fn into_body(self) -> Body;
+    fn into_body(self) -> DynBody;
 }
 
 impl IntoBody for &'static str {
-    fn into_body(self) -> Body {
-        self.as_bytes().to_vec()
+    fn into_body(self) -> DynBody {
+        Body::Bytes(self.as_bytes().to_vec())
+    }
+}
+
+impl IntoBody for &[u8] {
+    fn into_body(self) -> DynBody {
+        Body::Bytes(self.to_vec())
     }
 }
 
 impl IntoBody for String {
-    fn into_body(self) -> Body {
-        self.into_bytes()
+    fn into_body(self) -> DynBody {
+        Body::Bytes(self.into_bytes())
+    }
+}
+
+impl IntoBody for Vec<u8> {
+    fn into_body(self) -> DynBody {
+        Body::Bytes(self)
     }
 }
 
 impl IntoBody for &String {
-    fn into_body(self) -> Body {
-        self.as_bytes().into()
+    fn into_body(self) -> DynBody {
+        Body::Bytes(self.as_bytes().to_vec())
     }
 }
 
 impl IntoBody for Bytes<'_> {
-    fn into_body(self) -> Body {
-        self.collect()
+    fn into_body(self) -> DynBody {
+        Body::Bytes(self.collect())
     }
 }
