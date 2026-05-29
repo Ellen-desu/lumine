@@ -1,3 +1,8 @@
+//! HTTP request type.
+//!
+//! This module defines the [`Request`] type alias, which is the primary
+//! way Lumine represents incoming HTTP requests.
+
 /// The request type used throughout Lumine.
 ///
 /// This is an alias for `http::Request<Vec<u8>>`, binding the

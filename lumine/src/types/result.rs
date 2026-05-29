@@ -1,3 +1,8 @@
+//! Framework-wide Result type.
+//!
+//! This module defines the [`Result`] type alias, which simplifies error
+//! handling by pinning the error type to [`Error`].
+
 use crate::error::Error;
 
 /// The standard result type used throughout Lumine.
