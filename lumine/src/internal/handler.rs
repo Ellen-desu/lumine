@@ -1,14 +1,14 @@
 use crate::{
     application::{lumine::Lumine, states::Ready},
     body::Body,
-    error::Error,
     internal::parser,
     middleware::next::Next,
+    routing::into_response::IntoResponse,
     stream::Stream,
     types::{request::Request, response::Response, result::Result},
     utils::default_headers::DefaultHeaders,
 };
-use http::{HeaderValue, StatusCode, header::CONNECTION};
+use http::{StatusCode, header::CONNECTION};
 use std::{
     io::{BufWriter, Write},
     net::TcpStream,
@@ -33,20 +33,7 @@ pub(crate) fn handle_client(app: Arc<Lumine<Ready>>, stream: TcpStream) -> Resul
             // Client disconnected
             Ok(None) => break,
             Err(error) => {
-                let mut response = http::Response::builder()
-                    .status(match error {
-                        Error::UriTooLarge | Error::QueryTooLarge => StatusCode::URI_TOO_LONG,
-                        Error::HeadersTooLarge => StatusCode::REQUEST_HEADER_FIELDS_TOO_LARGE,
-                        Error::BodyTooLarge => StatusCode::PAYLOAD_TOO_LARGE,
-                        _ => StatusCode::BAD_REQUEST,
-                    })
-                    .body(Body::Empty)?;
-
-                response
-                    .headers_mut()
-                    .append(CONNECTION, HeaderValue::from_static("close"));
-
-                write_response(response, &stream)?;
+                write_response(error.into_response()?, &stream)?;
 
                 break;
             }

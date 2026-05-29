@@ -71,6 +71,6 @@ where
         *self.path == **path
     }
     fn call(&self, request: Request) -> Result<Response> {
-        Ok((self.handler)(request).into_response()?)
+        (self.handler)(request).into_response()
     }
 }

@@ -6,14 +6,19 @@
 //! to complex tuples containing status codes and headers.
 
 use crate::{
-    attachment::Attachment, body::Body, routing::into_body::IntoBody, types::response::Response,
+    attachment::Attachment,
+    body::Body,
+    error::Error,
+    routing::into_body::IntoBody,
+    stream::Stream,
+    types::{response::Response, result::Result},
     utils::set_headers::SetHeaders,
 };
 use http::{
-    HeaderMap, HeaderValue, Result, StatusCode,
+    HeaderMap, HeaderValue, StatusCode,
     header::{CONTENT_DISPOSITION, CONTENT_TYPE},
 };
-use std::io::{self, ErrorKind};
+use std::io::ErrorKind;
 
 /// Converts a value into an HTTP response.
 ///
@@ -68,7 +73,7 @@ pub trait IntoResponse {
 
 impl IntoResponse for () {
     fn into_response(self) -> Result<Response> {
-        http::Response::builder().body(Body::Empty)
+        Ok(http::Response::builder().body(Body::Empty)?)
     }
 }
 
@@ -77,9 +82,9 @@ where
     B: IntoBody,
 {
     fn into_response(self) -> Result<Response> {
-        http::Response::builder()
+        Ok(http::Response::builder()
             .status(self.0)
-            .body(self.1.into_body())
+            .body(self.1.into_body())?)
     }
 }
 
@@ -91,21 +96,21 @@ where
         let builder = http::Response::builder();
 
         if !(100..=599).contains(&self.0) {
-            return builder
+            return Ok(builder
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::Empty);
+                .body(Body::Empty)?);
         }
 
-        builder.status(self.0).body(self.1.into_body())
+        Ok(builder.status(self.0).body(self.1.into_body())?)
     }
 }
 
 impl IntoResponse for (StatusCode, HeaderMap) {
     fn into_response(self) -> Result<Response> {
-        http::Response::builder()
+        Ok(http::Response::builder()
             .status(self.0)
             .headers(&self.1)
-            .body(Body::Empty)
+            .body(Body::Empty)?)
     }
 }
 
@@ -113,12 +118,12 @@ impl IntoResponse for (u16, HeaderMap) {
     fn into_response(self) -> Result<Response> {
         let builder = http::Response::builder();
         if !(100..=599).contains(&self.0) {
-            return http::Response::builder()
+            return Ok(http::Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::Empty);
+                .body(Body::Empty)?);
         }
 
-        builder.headers(&self.1).status(self.0).body(Body::Empty)
+        Ok(builder.headers(&self.1).status(self.0).body(Body::Empty)?)
     }
 }
 
@@ -127,9 +132,9 @@ where
     B: IntoBody,
 {
     fn into_response(self) -> Result<Response> {
-        http::Response::builder()
+        Ok(http::Response::builder()
             .headers(&self.0)
-            .body(self.1.into_body())
+            .body(self.1.into_body())?)
     }
 }
 
@@ -138,10 +143,10 @@ where
     B: IntoBody,
 {
     fn into_response(self) -> Result<Response> {
-        http::Response::builder()
+        Ok(http::Response::builder()
             .status(self.0)
             .headers(&self.1)
-            .body(self.2.into_body())
+            .body(self.2.into_body())?)
     }
 }
 
@@ -153,21 +158,21 @@ where
         let builder = http::Response::builder();
 
         if !(100..=599).contains(&self.0) {
-            return builder
+            return Ok(builder
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::Empty);
+                .body(Body::Empty)?);
         }
 
-        builder
+        Ok(builder
             .headers(&self.1)
             .status(self.0)
-            .body(self.2.into_body())
+            .body(self.2.into_body())?)
     }
 }
 
 impl IntoResponse for StatusCode {
     fn into_response(self) -> Result<Response> {
-        http::Response::builder().status(self).body(Body::Empty)
+        Ok(http::Response::builder().status(self).body(Body::Empty)?)
     }
 }
 
@@ -176,7 +181,7 @@ where
     B: IntoBody,
 {
     fn into_response(self) -> Result<Response> {
-        http::Response::builder().body(self.into_body())
+        Ok(http::Response::builder().body(self.into_body())?)
     }
 }
 
@@ -184,44 +189,73 @@ impl IntoResponse for u16 {
     fn into_response(self) -> Result<Response> {
         let builder = http::Response::builder();
         if !(100..=599).contains(&self) {
-            return builder
+            return Ok(builder
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::Empty);
+                .body(Body::Empty)?);
         }
 
-        builder.status(self).body(Body::Empty)
+        Ok(builder.status(self).body(Body::Empty)?)
     }
 }
 
-impl IntoResponse for io::Result<Attachment> {
+impl IntoResponse for Error {
     fn into_response(self) -> Result<Response> {
-        let mut builder = http::Response::builder();
-
-        match self {
-            Ok(file) => {
-                // Automatically set content type to "application/octet-stream" in `DefaultHeaders::set_default_headers`.
-                // So, None value can be ignored.
-                if let Some(info) = file.info {
-                    builder =
-                        builder.header(CONTENT_TYPE, HeaderValue::from_static(info.mime_type()));
-                };
-
-                builder = builder.header(
-                    CONTENT_DISPOSITION,
-                    HeaderValue::from_str(&format!("attachment; filename={}", file.filename))?,
-                );
-
-                builder.body(Body::Stream(Box::new(file)))
-            }
-            Err(error) => {
-                let status = match error.kind() {
+        Ok(match self {
+            Error::Io { source } => {
+                let status = match source.kind() {
                     ErrorKind::NotFound => StatusCode::NOT_FOUND,
                     ErrorKind::PermissionDenied => StatusCode::FORBIDDEN,
                     _ => StatusCode::INTERNAL_SERVER_ERROR,
                 };
-
-                builder.status(status).body(Body::Empty)
+                http::Response::builder().status(status).body(Body::Empty)
             }
+            Error::Parser => http::Response::builder()
+                .status(StatusCode::BAD_REQUEST)
+                .body(Body::Empty),
+            Error::UriTooLarge => http::Response::builder()
+                .status(StatusCode::URI_TOO_LONG)
+                .body(Body::Empty),
+
+            Error::BodyTooLarge => http::Response::builder()
+                .status(StatusCode::PAYLOAD_TOO_LARGE)
+                .body(Body::Empty),
+            Error::HeadersTooLarge => http::Response::builder()
+                .status(StatusCode::REQUEST_HEADER_FIELDS_TOO_LARGE)
+                .body(Body::Empty),
+            Error::QueryTooLarge => http::Response::builder()
+                .status(StatusCode::URI_TOO_LONG)
+                .body(Body::Empty),
+            _ => http::Response::builder()
+                .status(StatusCode::BAD_REQUEST)
+                .body(Body::Empty),
+        }?)
+    }
+}
+
+impl IntoResponse for Attachment {
+    fn into_response(self) -> Result<Response> {
+        let mut builder = http::Response::builder();
+
+        // Automatically set content type to "application/octet-stream" in `DefaultHeaders::set_default_headers`.
+        // So, None value can be ignored.
+        if let Some(info) = self.info {
+            builder = builder.header(CONTENT_TYPE, HeaderValue::from_static(info.mime_type()));
+        };
+
+        builder = builder.header(
+            CONTENT_DISPOSITION,
+            HeaderValue::from_str(&format!("attachment; filename={}", self.filename))?,
+        );
+
+        Ok(builder.body(Body::Stream(Box::new(self) as Box<dyn Stream>))?)
+    }
+}
+
+impl IntoResponse for Result<Attachment> {
+    fn into_response(self) -> Result<Response> {
+        match self {
+            Ok(value) => value.into_response(),
+            Err(error) => error.into_response(),
         }
     }
 }

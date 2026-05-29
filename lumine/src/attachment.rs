@@ -10,7 +10,7 @@
 use infer::Type;
 use std::{
     fs::File,
-    io::{self, BufReader, Read},
+    io::{BufReader, Read},
     ops::{Deref, DerefMut},
     path::Path,
 };
@@ -42,9 +42,9 @@ impl Attachment {
     ///
     /// # Errors
     ///
-    /// Returns an [`io::Error`] if the file cannot be opened or metadata
+    /// Returns an [`Error`](crate::error::Error) if the file cannot be opened or metadata
     /// cannot be retrieved.
-    pub fn open(path: impl AsRef<Path>, filename: &'static str) -> io::Result<Self> {
+    pub fn open(path: impl AsRef<Path>, filename: &'static str) -> Result<Self> {
         let path = path.as_ref();
 
         let file = File::open(path)?;
