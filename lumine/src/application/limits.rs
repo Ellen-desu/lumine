@@ -1,10 +1,24 @@
+//! Resource limits and constraints.
+//!
+//! This module defines the [`Limits`] struct, which specifies various
+//! constraints for the HTTP server, such as maximum URI size, header
+//! counts, and body size. These limits help protect the server against
+//! resource exhaustion and certain types of DoS attacks.
+
+/// Resource limits for the HTTP server.
 #[derive(Debug, Clone, Copy)]
 pub struct Limits {
+    /// Maximum size of the request URI in bytes.
     pub max_uri_size: usize,
+    /// Maximum total size of query parameters in bytes.
     pub max_query_size: usize,
+    /// Maximum number of query parameters allowed.
     pub max_query_count: usize,
+    /// Maximum total size of all request headers in bytes.
     pub max_headers_size: usize,
+    /// Maximum number of request headers allowed.
     pub max_headers_count: usize,
+    /// Maximum size of the request body in bytes.
     pub max_body_size: usize,
 }
 

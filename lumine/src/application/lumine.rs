@@ -1,3 +1,9 @@
+//! Main application structure and implementation.
+//!
+//! This module provides the [`Lumine`] struct, which is the central entry
+//! point for building and running a Lumine application. It manages
+//! routes, middleware, and server configuration.
+
 use crate::{
     application::{
         limits::Limits,
@@ -298,32 +304,32 @@ impl Lumine<Ready> {
         None
     }
 
-    /// Get the application limits
+    /// Returns the application's resource limits.
     pub fn limits(&self) -> Limits {
         self.limits
     }
 
-    /// Get the application maximum request line that have been set
+    /// Returns the maximum URI size in bytes.
     pub fn max_uri_size(&self) -> usize {
         self.limits.max_uri_size
     }
 
-    /// Get the application maximum query size that have been set
+    /// Returns the maximum total query size in bytes.
     pub fn max_query_size(&self) -> usize {
         self.limits.max_query_size
     }
 
-    /// Get the application maximum headers size that have been set
+    /// Returns the maximum total headers size in bytes.
     pub fn max_headers_size(&self) -> usize {
         self.limits.max_headers_size
     }
 
-    /// Get the application maximum headers count that have been set
+    /// Returns the maximum number of headers allowed.
     pub fn max_headers_count(&self) -> usize {
         self.limits.max_headers_count
     }
 
-    /// Get the application maximum body that have been set
+    /// Returns the maximum body size in bytes.
     pub fn max_body_size(&self) -> usize {
         self.limits.max_body_size
     }
