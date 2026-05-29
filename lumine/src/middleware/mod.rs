@@ -1,3 +1,11 @@
+//! Middleware system for request and response processing.
+//!
+//! Middleware provides a way to wrap the execution of route handlers with
+//! additional logic. This can be used for tasks like logging, authentication,
+//! CORS, and more.
+//!
+//! The core of the middleware system is the [`Middleware`] trait.
+
 pub mod next;
 
 pub use self::next::Next;

@@ -1,3 +1,10 @@
+//! Middleware execution chain.
+//!
+//! This module provides the [`Next`] struct, which represents the remaining
+//! middleware pipeline and the final route handler. It allows middleware to
+//! control the flow of execution by deciding when (or if) to call the next
+//! step in the chain.
+
 use crate::{
     middleware::Middleware,
     routing::route_service::RouteService,
@@ -6,7 +13,7 @@ use crate::{
 
 /// Represents the remaining execution chain of middlewares.
 ///
-/// `Next` is responsible for advancing the request through the middleware
+/// [`Next`] is responsible for advancing the request through the middleware
 /// pipeline. It holds a slice of remaining middlewares and the final
 /// [`RouteService`] handler.
 ///

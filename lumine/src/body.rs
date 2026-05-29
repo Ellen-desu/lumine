@@ -1,8 +1,21 @@
+//! HTTP response body representation.
+//!
+//! This module defines the [`Body`] enum, which represents the various forms
+//! an HTTP response body can take in Lumine. It supports:
+//!
+//! - [`Body::Empty`]: No content.
+//! - [`Body::Bytes`]: Buffered data (e.g., `Vec<u8>`).
+//! - [`Body::Stream`]: Data provided by a type implementing the [`Stream`] trait.
+
 use crate::stream::Stream;
 
+/// Represents the body of an HTTP response.
 pub enum Body<S: Stream> {
+    /// An empty response body.
     Empty,
+    /// A response body containing buffered bytes.
     Bytes(Vec<u8>),
+    /// A response body that streams data using the [`Stream`] trait.
     Stream(S),
 }
 

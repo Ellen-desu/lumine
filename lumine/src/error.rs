@@ -1,3 +1,9 @@
+//! Error types and propagation.
+//!
+//! This module defines the [`enum@Error`] enum, which provides a unified error model
+//! for the entire request lifecycle. It centralizes errors from various sources
+//! (I/O, HTTP parsing, etc.) into a single, framework-wide type.
+
 use http::{
     header::{InvalidHeaderName, InvalidHeaderValue},
     method::InvalidMethod,
