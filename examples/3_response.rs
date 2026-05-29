@@ -17,6 +17,7 @@
 //! curl http://127.0.0.1:8080/html
 //! curl http://127.0.0.1:8080/json
 //! curl http://127.0.0.1:8080/created
+//! curl http://127.0.0.1:8080/empty
 //! ```
 
 use http::{HeaderMap, HeaderValue, StatusCode, header::CONTENT_TYPE};

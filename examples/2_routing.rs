@@ -59,7 +59,7 @@ fn index_handler(_req: Request) -> impl IntoResponse {
 /// Handler: About page
 fn about_handler(_req: Request) -> impl IntoResponse {
     "About Lumine:\n\nLumine is a simple, synchronous HTTP web server written in Rust.\n\
-     Design: Fast, Easy, No async/await complexity"
+     Design: Fast & Easy"
 }
 
 /// Handler: Health check (typically used by load balancers)
