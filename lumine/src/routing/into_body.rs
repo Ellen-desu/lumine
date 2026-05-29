@@ -1,3 +1,9 @@
+//! Body conversion trait.
+//!
+//! This module provides the [`IntoBody`] trait, which allows various types
+//! to be converted into a [`DynBody`]. This is used to make returning
+//! different types of content from handlers more ergonomic.
+
 use crate::{body::Body, types::dynbody::DynBody};
 use std::str::Bytes;
 

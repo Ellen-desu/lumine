@@ -1,3 +1,8 @@
+//! Path normalization and segmentation.
+//!
+//! This module provides the [`Path`] struct, which is used to represent
+//! and manipulate normalized HTTP request paths.
+
 use std::ops::{Deref, DerefMut};
 
 /// Represents a normalized, segmented view of a URL path.

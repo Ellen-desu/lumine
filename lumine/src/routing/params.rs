@@ -1,3 +1,8 @@
+//! Path parameter extraction.
+//!
+//! This module provides the [`Params`] struct, which holds dynamic segments
+//! extracted from the request path during routing.
+
 use crate::types::request::Request;
 use std::{
     collections::HashMap,

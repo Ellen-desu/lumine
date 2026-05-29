@@ -1,3 +1,8 @@
+//! Query parameter extraction.
+//!
+//! This module provides the [`Query`] struct, which handles the parsing
+//! and storage of query parameters from the request URI.
+
 use crate::types::request::Request;
 use std::{
     collections::HashMap,

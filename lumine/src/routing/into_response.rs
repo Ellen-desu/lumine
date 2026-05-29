@@ -1,3 +1,10 @@
+//! Response conversion trait.
+//!
+//! This module provides the [`IntoResponse`] trait, which is the core
+//! mechanism for turning handler return values into HTTP responses. It
+//! allows handlers to return a wide variety of types, from simple strings
+//! to complex tuples containing status codes and headers.
+
 use crate::{
     attachment::Attachment, body::Body, routing::into_body::IntoBody, types::response::Response,
     utils::set_headers::SetHeaders,

@@ -1,3 +1,9 @@
+//! Route implementation.
+//!
+//! This module provides the [`Route`] struct, which is the concrete
+//! implementation of a route in Lumine, combining a path, a handler,
+//! and route-specific middleware.
+
 use crate::{
     middleware::Middleware,
     routing::{
@@ -6,6 +12,7 @@ use crate::{
     types::{request::Request, response::Response, result::Result},
 };
 
+/// A concrete route that matches a path and dispatches to a handler.
 pub struct Route<'a, F> {
     pub(crate) path: Path<'a>,
     pub(crate) middlewares: Vec<Box<dyn Middleware>>,
@@ -14,12 +21,13 @@ pub struct Route<'a, F> {
 }
 
 impl<'a, F> Route<'a, F> {
-    /// Add a new route middleware.
+    /// Adds a new middleware to this specific route.
     pub fn middleware<M: Middleware>(mut self, middleware: M) -> Self {
         self.middlewares.push(Box::new(middleware));
         self
     }
-    /// Set the route middlewares to run first before running global middlewares.
+
+    /// Configures this route to run its own middleware before any global middleware.
     pub fn route_middleware_first(mut self) -> Self {
         self.route_middleware_first = true;
         self

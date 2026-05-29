@@ -1,3 +1,9 @@
+//! Route service abstraction.
+//!
+//! This module defines the [`RouteService`] trait, which abstracts the
+//! behavior of a single route, including matching, middleware execution,
+//! and handler dispatching.
+
 use crate::{
     middleware::Middleware,
     routing::{params::Params, path::Path},
