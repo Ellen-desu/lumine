@@ -13,3 +13,7 @@ lumine = { path = "../lumine", features = ["test"] }
 [[test]]
 name = "routing"
 path = "routing.rs"
+
+[[test]]
+name = "middleware"
+path = "middleware.rs"

@@ -38,4 +38,9 @@ impl<'a> Next<'a> {
             self.route.call(request)
         }
     }
+
+    #[cfg(feature = "test")]
+    pub fn new(middlewares: &'a [&'a dyn Middleware], route: &'a dyn RouteService) -> Self {
+        Self { middlewares, route }
+    }
 }
