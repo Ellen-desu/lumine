@@ -201,6 +201,9 @@ impl IntoResponse for u16 {
 impl IntoResponse for Error {
     fn into_response(self) -> Result<Response> {
         Ok(match self {
+            Error::Http { source: _ } => http::Response::builder()
+                .status(StatusCode::BAD_REQUEST)
+                .body(Body::Empty),
             Error::Io { source } => {
                 let status = match source.kind() {
                     ErrorKind::NotFound => StatusCode::NOT_FOUND,
@@ -224,9 +227,6 @@ impl IntoResponse for Error {
                 .body(Body::Empty),
             Error::QueryTooLarge => http::Response::builder()
                 .status(StatusCode::URI_TOO_LONG)
-                .body(Body::Empty),
-            _ => http::Response::builder()
-                .status(StatusCode::BAD_REQUEST)
                 .body(Body::Empty),
         }?)
     }
