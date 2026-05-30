@@ -42,9 +42,7 @@ impl DefaultHeaders for Response {
             }
             Body::Stream(stream) => {
                 if let Some(length) = stream.size_hint() {
-                    parts
-                        .headers
-                        .insert(CONTENT_LENGTH, HeaderValue::from_str(&length.to_string())?);
+                    parts.headers.insert(CONTENT_LENGTH, length.into());
                 } else {
                     parts
                         .headers
