@@ -4,5 +4,6 @@
 //! the Lumine framework, such as header management and default response
 //! configurations.
 
-pub(crate) mod default_headers;
 pub mod set_headers;
+
+pub(crate) mod default_headers;
