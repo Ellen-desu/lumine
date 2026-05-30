@@ -6,9 +6,9 @@
 //! to complex tuples containing status codes and headers.
 
 use crate::{
-    attachment::Attachment,
     body::Body,
     error::Error,
+    file::{disposition::Disposition, filestream::FileStream},
     routing::into_body::IntoBody,
     stream::Stream,
     types::{response::Response, result::Result},
@@ -232,20 +232,26 @@ impl IntoResponse for Error {
     }
 }
 
-impl IntoResponse for Attachment {
+impl IntoResponse for FileStream {
     fn into_response(self) -> Result<Response> {
         let mut builder = http::Response::builder();
 
-        // Automatically set content type to "application/octet-stream" in `DefaultHeaders::set_default_headers`.
-        // So, None value can be ignored.
-        if let Some(info) = self.info {
-            builder = builder.header(CONTENT_TYPE, HeaderValue::from_static(info.mime_type()));
-        };
+        builder = builder.header(CONTENT_TYPE, HeaderValue::from_static(self.mime_type));
 
-        builder = builder.header(
-            CONTENT_DISPOSITION,
-            HeaderValue::from_str(&format!("attachment; filename={}", self.filename))?,
-        );
+        match self.disposition {
+            Disposition::Attachment => {
+                builder = builder.header(
+                    CONTENT_DISPOSITION,
+                    HeaderValue::from_str(&format!("attachment; filename={}", self.filename))?,
+                );
+            }
+            Disposition::Inline => {
+                builder = builder.header(
+                    CONTENT_DISPOSITION,
+                    HeaderValue::from_str(&format!("inline; filename={}", self.filename))?,
+                );
+            }
+        }
 
         Ok(builder.body(Body::Stream(Box::new(self) as Box<dyn Stream>))?)
     }

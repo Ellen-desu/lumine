@@ -32,4 +32,7 @@ impl<T: Stream + ?Sized> Stream for Box<T> {
     fn next_chunk(&mut self, buf: &mut [u8]) -> Result<usize> {
         (**self).next_chunk(buf)
     }
+    fn size_hint(&self) -> Option<usize> {
+        (**self).size_hint()
+    }
 }

@@ -3,9 +3,9 @@
 mod internal;
 
 pub mod application;
-pub mod attachment;
 pub mod body;
 pub mod error;
+pub mod file;
 pub mod middleware;
 pub mod routing;
 pub mod stream;
@@ -17,6 +17,7 @@ pub use crate::{
     application::Lumine,
     body::Body,
     error::Error,
+    file::{Disposition, FileStream},
     middleware::{Middleware, Next},
     routing::{IntoResponse, Params, Path, Query, Route},
     types::{Request, Response, Result},
