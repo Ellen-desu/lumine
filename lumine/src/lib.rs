@@ -21,7 +21,7 @@ pub use crate::{
     middleware::{Middleware, Next},
     routing::{IntoResponse, Params, Path, Query, Route},
     types::{Request, Response, Result},
-    utils::set_headers::SetHeaders,
+    utils::SetHeaders,
 };
 
 #[cfg(feature = "bench")]

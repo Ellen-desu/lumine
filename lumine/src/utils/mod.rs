@@ -7,3 +7,5 @@
 pub mod set_headers;
 
 pub(crate) mod default_headers;
+
+pub use set_headers::SetHeaders;
