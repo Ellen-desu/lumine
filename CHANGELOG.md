@@ -7,10 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Request headers limiter.
-- File sending in response.
-- `CONTRIBUTING.md` file.
 - Asynchronous runtime with Tokio.
+
+## [0.5.5] - 2026-05-31
+
+## Added
+- Limits configuration using `Limits` struct.
+- Sending attachment support using `Attachment` struct.
+- Routing integration tests.
+- Middleware integration tests.
+- `CONTRIBUTING.md` file.
+- Compilation profile.
+- Example of using `FileStream`.
+- `infer` dependency for reading mimetypes.
+- `UriTooLarge`, `QueryTooLarge`, `HeadersTooLarge`, `BodyTooLarge` enum values to `Error`.
+
+## Removed
+- *BREAKING:* `Client` struct. You don't need to while loop the return of `Lumine::serve` anymore.
+- All dev dependencies in main crate.
+
+## Changed
+- Use crate own `Result` for all error handling.
 
 ## [0.4.4] - 2026-05-18
 
