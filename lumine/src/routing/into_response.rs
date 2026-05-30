@@ -251,7 +251,7 @@ impl IntoResponse for Attachment {
     }
 }
 
-impl IntoResponse for Result<Attachment> {
+impl<T: IntoResponse> IntoResponse for Result<T> {
     fn into_response(self) -> Result<Response> {
         match self {
             Ok(value) => value.into_response(),
