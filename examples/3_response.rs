@@ -7,6 +7,7 @@
 //! - HTML responses with proper Content-Type
 //! - JSON responses with proper Content-Type
 //! - Status codes and HTTP semantics
+//! - File responses with FileStream
 //! - Custom response headers
 //! - Response tuples: (StatusCode, Body), (Headers, Body), etc.
 //!
@@ -16,12 +17,14 @@
 //! curl http://127.0.0.1:8080/text
 //! curl http://127.0.0.1:8080/html
 //! curl http://127.0.0.1:8080/json
+//! curl http://127.0.0.1:8080/inline
+//! curl http://127.0.0.1:8080/attachment
 //! curl http://127.0.0.1:8080/created
 //! curl http://127.0.0.1:8080/empty
 //! ```
 
 use http::{HeaderMap, HeaderValue, StatusCode, header::CONTENT_TYPE};
-use lumine::{IntoResponse, Lumine, Request, Result};
+use lumine::{Disposition, FileStream, IntoResponse, Lumine, Request, Result};
 use std::net::TcpListener;
 
 fn main() -> Result<()> {
@@ -32,6 +35,9 @@ fn main() -> Result<()> {
         .route("/html", html_response)
         // JSON response
         .route("/json", json_response)
+        // File response
+        .route("/inline", inline_response)
+        .route("/attachment", attachment_response)
         // Response with status code
         .route("/created", created_response)
         // Response with headers
@@ -47,6 +53,8 @@ fn main() -> Result<()> {
     println!("  GET /text              → Plain text (auto text/plain)");
     println!("  GET /html              → HTML page (text/html)");
     println!("  GET /json              → JSON data (application/json)");
+    println!("  GET /inline            → File content (auto Content-Type)");
+    println!("  GET /attachment        → File content (auto Content-Type)");
     println!("  GET /created           → Status 201 Created");
     println!("  GET /custom-headers    → Custom response headers");
     println!("  GET /empty             → Empty body");
@@ -127,6 +135,16 @@ fn json_response(_req: Request) -> impl IntoResponse {
 }"#;
 
     (StatusCode::OK, headers, json)
+}
+
+/// Handler: Inline response with Content-Disposition: inline
+fn inline_response(_req: Request) -> impl IntoResponse {
+    FileStream::open_with_disposition("assets/image.png", Disposition::Inline)
+}
+
+/// Handler: Attachment response with Content-Disposition: attachment
+fn attachment_response(_req: Request) -> impl IntoResponse {
+    FileStream::open_with_disposition("assets/lumine.txt", Disposition::Attachment)
 }
 
 /// Handler: Response with 201 Created status code
