@@ -1,11 +1,11 @@
-//! File attachment and streaming.
+//! File streaming and attachment handling.
 //!
-//! This module provides the [`Attachment`] struct, which facilitates sending files
+//! This module provides the [`FileStream`] struct, which facilitates sending files
 //! as response bodies. It handles file opening, metadata retrieval (like length),
 //! and provides automatic MIME type inference using the `infer` crate.
 //!
-//! Attachments implement the [`Stream`] trait, allowing
-//! them to be used directly in a [`Body::Stream`](crate::body::Body::Stream).
+//! `FileStream` implements the [`Stream`] trait, allowing
+//! it to be used directly in a [`Body::Stream`](crate::body::Body::Stream).
 
 use crate::{file::disposition::Disposition, stream::Stream, types::result::Result};
 use std::{
@@ -15,10 +15,11 @@ use std::{
     path::Path,
 };
 
-/// A file attachment for HTTP responses.
+/// A file stream for HTTP responses.
 ///
-/// `Attachment` manages a file handle and its metadata, allowing it to be
-/// streamed as a response body.
+/// `FileStream` manages a file handle and its metadata, allowing it to be
+/// streamed as a response body. It automatically detects the MIME type
+/// and provides file metadata like size and name.
 #[derive(Debug)]
 pub struct FileStream {
     pub(crate) reader: BufReader<File>,
@@ -33,6 +34,17 @@ pub struct FileStream {
 }
 
 impl FileStream {
+    /// Opens a file at the given path with a specific [`Disposition`].
+    ///
+    /// This method will:
+    /// 1. Open the file.
+    /// 2. Extract the filename.
+    /// 3. Retrieve file metadata (length).
+    /// 4. Infer the MIME type.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the file cannot be opened or if metadata cannot be retrieved.
     pub fn open_with_disposition(path: impl AsRef<Path>, disposition: Disposition) -> Result<Self> {
         let path = path.as_ref();
 
