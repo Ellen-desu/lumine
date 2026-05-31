@@ -9,9 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Asynchronous runtime with Tokio.
 
-## [0.5.5] - 2026-05-31
+## [0.5.1] - 2026-05-31
 
-## Added
+### Added
+- Documentation on file module.
+
+### Fixed
+- Wrong version, released date, and format in `CHANGELOG.md`.
+
+## [0.5.0] - 2026-05-30
+
+### Added
 - Limits configuration using `Limits` struct.
 - Sending attachment support using `Attachment` struct.
 - Routing integration tests.
@@ -22,11 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `infer` dependency for reading mimetypes.
 - `UriTooLarge`, `QueryTooLarge`, `HeadersTooLarge`, `BodyTooLarge` enum values to `Error`.
 
-## Removed
+### Removed
 - *BREAKING:* `Client` struct. You don't need to while loop the return of `Lumine::serve` anymore.
 - All dev dependencies in main crate.
 
-## Changed
+### Changed
 - Use crate own `Result` for all error handling.
 
 ## [0.4.4] - 2026-05-18
