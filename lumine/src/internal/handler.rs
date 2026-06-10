@@ -129,10 +129,7 @@ pub fn write_response(response: Response, stream: &TcpStream) -> Result<()> {
     Ok(())
 }
 
-pub fn write_body_chunked<S: Stream>(
-    mut bytes_stream: S,
-    writer: &mut BufWriter<&TcpStream>,
-) -> Result<()> {
+pub fn write_body_chunked<S: Stream, W: Write>(mut bytes_stream: S, writer: &mut W) -> Result<()> {
     let mut buffer = [0u8; 8192];
 
     loop {
@@ -151,10 +148,7 @@ pub fn write_body_chunked<S: Stream>(
     Ok(())
 }
 
-pub fn write_body_static<S: Stream>(
-    mut bytes_stream: S,
-    writer: &mut BufWriter<&TcpStream>,
-) -> Result<()> {
+pub fn write_body_static<S: Stream, W: Write>(mut bytes_stream: S, writer: &mut W) -> Result<()> {
     let mut buffer = [0u8; 8192];
 
     loop {
