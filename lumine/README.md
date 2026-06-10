@@ -2,6 +2,8 @@
 
 A lightweight HTTP web server framework written in Rust.
 
+[**Documentation**](https://docs.rs/lumine/latest/lumine) | [**Contributing**](https://github.com/Ellen-desu/lumine/blob/main/CONTRIBUTING.md)
+
 Lumine is designed to be:
 
 * **Fast** — Minimal overhead with a focus on practical performance.
