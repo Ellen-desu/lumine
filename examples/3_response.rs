@@ -139,7 +139,7 @@ fn json_response(_req: Request) -> impl IntoResponse {
 
 /// Handler: Inline response with Content-Disposition: inline
 fn inline_response(_req: Request) -> impl IntoResponse {
-    FileStream::open_with_disposition("assets/image.png", Disposition::Inline)
+    FileStream::open_with_disposition("assets/lumine.jpg", Disposition::Inline)
 }
 
 /// Handler: Attachment response with Content-Disposition: attachment
