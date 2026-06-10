@@ -9,7 +9,7 @@ use crate::{
         limits::Limits,
         states::{Building, Ready},
     },
-    internal::handler,
+    internal::handler::connection,
     middleware::Middleware,
     routing::{
         into_response::IntoResponse, params::Params, path::Path, route::Route,
@@ -284,7 +284,7 @@ impl Lumine<Ready> {
                 stream.set_write_timeout(Some(app.write_timeout))?;
 
                 thread::spawn(move || {
-                    let _ = handler::handle_client(app, stream);
+                    let _ = connection::handle_connection(app, stream);
                 });
             }
         }
