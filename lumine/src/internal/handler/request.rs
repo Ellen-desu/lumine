@@ -1,3 +1,8 @@
+//! Request dispatching module.
+//!
+//! This module provides functionality for finding the appropriate route for a request,
+//! executing the middleware chain, and generating the final response.
+
 use crate::{
     application::{lumine::Lumine, states::Ready},
     body::Body,
@@ -10,6 +15,11 @@ use std::{
     sync::Arc,
 };
 
+/// Dispatches a request to the appropriate route.
+///
+/// This function finds the matching route, prepares the middleware chain,
+/// and executes it. It also includes panic handling to ensure the application
+/// doesn't crash on handler errors.
 pub fn dispatch_request(mut request: Request, app: &Arc<Lumine<Ready>>) -> Result<Response> {
     let response = match app.get_route(request.uri()) {
         Some((route, params)) => {

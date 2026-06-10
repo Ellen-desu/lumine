@@ -1,3 +1,8 @@
+//! Connection handling module.
+//!
+//! This module provides functionality to handle TCP connections, parse requests,
+//! dispatch them to the appropriate route, and write responses back to the stream.
+
 use crate::{
     application::{lumine::Lumine, states::Ready},
     internal::{handler::request::dispatch_request, handler::writer::write_response, parser},
@@ -8,6 +13,11 @@ use crate::{
 use http::header::CONNECTION;
 use std::{net::TcpStream, sync::Arc};
 
+/// Handles an incoming TCP connection loop.
+///
+/// This function continuously parses requests from the stream, dispatches them
+/// to the application, and writes back the responses. It manages connection
+/// closure based on request headers.
 pub fn handle_connection(app: Arc<Lumine<Ready>>, stream: TcpStream) -> Result<()> {
     loop {
         let request_result = parser::parse_request(app.limits, &stream);

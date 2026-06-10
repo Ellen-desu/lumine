@@ -1,3 +1,8 @@
+//! Response writing module.
+//!
+//! This module provides functionality for writing HTTP responses to a TCP stream,
+//! supporting both static and chunked body writing.
+
 use crate::{
     body::Body,
     stream::Stream,
@@ -8,6 +13,10 @@ use std::{
     net::TcpStream,
 };
 
+/// Writes an HTTP response to the provided TCP stream.
+///
+/// This function writes the status line, headers, and body of the response
+/// to the stream using a buffered writer.
 pub fn write_response(response: Response, stream: &TcpStream) -> Result<()> {
     let mut writer = BufWriter::new(stream);
 
@@ -47,6 +56,7 @@ pub fn write_response(response: Response, stream: &TcpStream) -> Result<()> {
     Ok(())
 }
 
+/// Writes a streaming body to the writer using chunked transfer encoding.
 pub fn write_body_chunked<S: Stream, W: Write>(mut bytes_stream: S, writer: &mut W) -> Result<()> {
     let mut buffer = [0u8; 8192];
 
@@ -66,6 +76,7 @@ pub fn write_body_chunked<S: Stream, W: Write>(mut bytes_stream: S, writer: &mut
     Ok(())
 }
 
+/// Writes a streaming body to the writer directly (static size).
 pub fn write_body_static<S: Stream, W: Write>(mut bytes_stream: S, writer: &mut W) -> Result<()> {
     let mut buffer = [0u8; 8192];
 

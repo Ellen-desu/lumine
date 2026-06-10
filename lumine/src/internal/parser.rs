@@ -1,3 +1,8 @@
+//! HTTP request parsing module.
+//!
+//! This module provides functionality for parsing HTTP request lines, headers,
+//! and bodies from a TCP stream.
+
 use crate::{
     application::limits::Limits,
     error::Error,
@@ -11,6 +16,10 @@ use std::{
     str::FromStr,
 };
 
+/// Parses an entire HTTP request from a TCP stream.
+///
+/// This function reads the request line, headers, and body from the stream
+/// and constructs a `Request` object.
 pub fn parse_request(limits: Limits, stream: &TcpStream) -> Result<Option<Request>> {
     let mut reader = BufReader::new(stream);
     let mut buffer = String::new();
@@ -75,6 +84,10 @@ pub fn parse_request(limits: Limits, stream: &TcpStream) -> Result<Option<Reques
     Ok(Some(request))
 }
 
+/// Parses the HTTP request line.
+///
+/// This function extracts the method, URI, HTTP version, and query parameters
+/// from the first line of the HTTP request.
 pub fn parse_request_line(line: &str, limits: Limits) -> Result<(Method, Uri, Version, Query)> {
     let parts: Vec<&str> = line.split_whitespace().collect();
 
@@ -121,6 +134,10 @@ pub fn parse_request_line(line: &str, limits: Limits) -> Result<(Method, Uri, Ve
     Ok((method, uri, version, query))
 }
 
+/// Parses a single HTTP header line.
+///
+/// This function splits the line into key-value pair and returns a `HeaderName`
+/// and `HeaderValue`.
 pub fn parse_headers(header: &str, limits: Limits) -> Result<(HeaderName, HeaderValue)> {
     if header.len() > limits.max_headers_size {
         return Err(Error::HeadersTooLarge);
@@ -137,6 +154,7 @@ pub fn parse_headers(header: &str, limits: Limits) -> Result<(HeaderName, Header
     Ok((header_name, header_value))
 }
 
+/// Reads the HTTP request body from the reader.
 pub fn parse_body<R: BufRead>(length: usize, reader: &mut R) -> Result<Vec<u8>> {
     let mut bytes = vec![0u8; length];
     reader.read_exact(&mut bytes)?;
