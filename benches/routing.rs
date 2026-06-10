@@ -52,7 +52,7 @@ fn benchmark(c: &mut Criterion) {
                 shuffled.shuffle(&mut rng);
 
                 for r in shuffled.iter() {
-                    black_box(app.get_route_for_bench(r));
+                    black_box(app.get_route(r));
                 }
             });
         });

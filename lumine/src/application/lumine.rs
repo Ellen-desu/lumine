@@ -293,7 +293,8 @@ impl Lumine<Ready> {
     }
 
     /// Returns the route and parameters that matches the given URI, if one exists.
-    pub(crate) fn get_route(&self, uri: &Uri) -> Option<(&dyn RouteService, Params)> {
+    #[doc(hidden)]
+    pub fn get_route(&self, uri: &Uri) -> Option<(&dyn RouteService, Params)> {
         let path_parts = Path::from(uri.path());
         for route in &self.routes {
             if let Some(params) = route.matches(&path_parts) {
@@ -332,15 +333,5 @@ impl Lumine<Ready> {
     /// Returns the maximum body size in bytes.
     pub fn max_body_size(&self) -> usize {
         self.limits.max_body_size
-    }
-
-    #[cfg(feature = "bench")]
-    pub fn get_route_for_bench(&self, uri: &Uri) -> Option<(&dyn RouteService, Params)> {
-        self.get_route(uri)
-    }
-
-    #[cfg(feature = "test")]
-    pub fn get_route_test(&self, uri: &Uri) -> Option<(&dyn RouteService, Params)> {
-        self.get_route(uri)
     }
 }

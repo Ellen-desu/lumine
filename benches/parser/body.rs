@@ -1,10 +1,8 @@
+use criterion::{Criterion, criterion_group, criterion_main};
 use std::{
     hint::black_box,
     io::{BufReader, Cursor},
 };
-
-use criterion::{Criterion, criterion_group, criterion_main};
-use lumine::parse_body_for_bench;
 
 fn benchmark(c: &mut Criterion) {
     let sizes = [
@@ -26,7 +24,7 @@ fn benchmark(c: &mut Criterion) {
 
                 let mut reader = BufReader::new(cursor);
 
-                black_box(parse_body_for_bench(size, &mut reader).unwrap())
+                black_box(lumine::parse_body(size, &mut reader).unwrap())
             });
         });
     }

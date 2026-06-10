@@ -14,7 +14,7 @@ pub mod utils;
 
 #[doc(inline)]
 pub use crate::{
-    application::Lumine,
+    application::{Lumine, limits::Limits},
     body::Body,
     error::Error,
     file::{Disposition, FileStream},
@@ -24,10 +24,7 @@ pub use crate::{
     utils::SetHeaders,
 };
 
-#[cfg(feature = "bench")]
 #[doc(hidden)]
-pub use crate::internal::parser::{
-    parse_body_for_bench, parse_headers_for_bench, parse_request_line_for_bench,
-};
+pub use crate::internal::parser::{parse_body, parse_headers, parse_request, parse_request_line};
 
 pub use http;

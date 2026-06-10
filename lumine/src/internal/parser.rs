@@ -11,7 +11,7 @@ use std::{
     str::FromStr,
 };
 
-pub(crate) fn parse_request(limits: Limits, stream: &TcpStream) -> Result<Option<Request>> {
+pub fn parse_request(limits: Limits, stream: &TcpStream) -> Result<Option<Request>> {
     let mut reader = BufReader::new(stream);
     let mut buffer = String::new();
 
@@ -75,10 +75,7 @@ pub(crate) fn parse_request(limits: Limits, stream: &TcpStream) -> Result<Option
     Ok(Some(request))
 }
 
-pub(crate) fn parse_request_line(
-    line: &str,
-    limits: Limits,
-) -> Result<(Method, Uri, Version, Query)> {
+pub fn parse_request_line(line: &str, limits: Limits) -> Result<(Method, Uri, Version, Query)> {
     let parts: Vec<&str> = line.split_whitespace().collect();
 
     let parts_len = parts.len();
@@ -124,7 +121,7 @@ pub(crate) fn parse_request_line(
     Ok((method, uri, version, query))
 }
 
-pub(crate) fn parse_headers(header: &str, limits: Limits) -> Result<(HeaderName, HeaderValue)> {
+pub fn parse_headers(header: &str, limits: Limits) -> Result<(HeaderName, HeaderValue)> {
     if header.len() > limits.max_headers_size {
         return Err(Error::HeadersTooLarge);
     }
@@ -140,24 +137,9 @@ pub(crate) fn parse_headers(header: &str, limits: Limits) -> Result<(HeaderName,
     Ok((header_name, header_value))
 }
 
-pub(crate) fn parse_body<R: BufRead>(length: usize, reader: &mut R) -> Result<Vec<u8>> {
+pub fn parse_body<R: BufRead>(length: usize, reader: &mut R) -> Result<Vec<u8>> {
     let mut bytes = vec![0u8; length];
     reader.read_exact(&mut bytes)?;
 
     Ok(bytes)
-}
-
-#[cfg(feature = "bench")]
-pub fn parse_request_line_for_bench(line: &str) -> Result<(Method, Uri, Version, Query)> {
-    parse_request_line(line, Limits::default())
-}
-
-#[cfg(feature = "bench")]
-pub fn parse_headers_for_bench(header: &str) -> Result<(HeaderName, HeaderValue)> {
-    parse_headers(header, Limits::default())
-}
-
-#[cfg(feature = "bench")]
-pub fn parse_body_for_bench<R: BufRead>(length: usize, reader: &mut R) -> Result<Vec<u8>> {
-    parse_body(length, reader)
 }

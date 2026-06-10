@@ -8,7 +8,7 @@ edition = "2024"
 license = "MIT"
 
 [dependencies]
-lumine = { path = "../lumine", features = ["bench"] }
+lumine = { path = "../lumine"}
 criterion = "0.8"
 rand = "0.9"
 

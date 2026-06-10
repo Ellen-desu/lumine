@@ -48,12 +48,9 @@ fn static_route_matching() {
         .route("/posts", |_| ())
         .build();
 
-    assert!(app.get_route_test(&Uri::from_static("/")).is_some());
-    assert!(
-        app.get_route_test(&Uri::from_static("/api/v2/users"))
-            .is_some()
-    );
-    assert!(app.get_route_test(&Uri::from_static("/posts")).is_some());
+    assert!(app.get_route(&Uri::from_static("/")).is_some());
+    assert!(app.get_route(&Uri::from_static("/api/v2/users")).is_some());
+    assert!(app.get_route(&Uri::from_static("/posts")).is_some());
 }
 
 #[test]
@@ -62,7 +59,7 @@ fn dynamic_route_matching_and_parameters_extraction() {
         .route("/users/:userId/posts/:postId", |_| ())
         .build();
 
-    let result = app.get_route_test(&Uri::from_static("/users/1/posts/2"));
+    let result = app.get_route(&Uri::from_static("/users/1/posts/2"));
     assert!(result.is_some());
 
     match result {
@@ -81,7 +78,7 @@ fn route_priority_static_vs_dynamic() {
         .route("/users/:id", |_| ())
         .build();
 
-    let result = app.get_route_test(&Uri::from_static("/users/me"));
+    let result = app.get_route(&Uri::from_static("/users/me"));
     assert!(result.is_some());
 
     match result {
@@ -96,5 +93,5 @@ fn route_priority_static_vs_dynamic() {
 #[test]
 fn trailing_slash_normalization() {
     let app = Lumine::builder().route("/users/:id", |_| ()).build();
-    assert!(app.get_route_test(&Uri::from_static("/users/1/")).is_some());
+    assert!(app.get_route(&Uri::from_static("/users/1/")).is_some());
 }

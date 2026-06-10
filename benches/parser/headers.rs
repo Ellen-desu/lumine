@@ -1,5 +1,5 @@
 use criterion::{Criterion, criterion_group, criterion_main};
-use lumine::parse_headers_for_bench;
+use lumine::application::Limits;
 use rand::seq::SliceRandom;
 use std::hint::black_box;
 
@@ -71,7 +71,7 @@ fn benchmark(c: &mut Criterion) {
                 shuffled.shuffle(&mut rng);
 
                 for header in shuffled.iter() {
-                    black_box(parse_headers_for_bench(header).unwrap());
+                    black_box(lumine::parse_headers(header, Limits::default()).unwrap());
                 }
             });
         });

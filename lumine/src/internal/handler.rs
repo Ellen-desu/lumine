@@ -16,7 +16,7 @@ use std::{
     sync::Arc,
 };
 
-pub(crate) fn handle_client(app: Arc<Lumine<Ready>>, stream: TcpStream) -> Result<()> {
+pub fn handle_client(app: Arc<Lumine<Ready>>, stream: TcpStream) -> Result<()> {
     loop {
         let request_result = parser::parse_request(app.limits, &stream);
 
@@ -52,7 +52,7 @@ pub(crate) fn handle_client(app: Arc<Lumine<Ready>>, stream: TcpStream) -> Resul
     Ok(())
 }
 
-fn handle_request(mut request: Request, app: &Arc<Lumine<Ready>>) -> Result<Response> {
+pub fn handle_request(mut request: Request, app: &Arc<Lumine<Ready>>) -> Result<Response> {
     let response = match app.get_route(request.uri()) {
         Some((route, params)) => {
             request.extensions_mut().insert(params);
@@ -90,7 +90,7 @@ fn handle_request(mut request: Request, app: &Arc<Lumine<Ready>>) -> Result<Resp
     Ok(response)
 }
 
-fn write_response(response: Response, stream: &TcpStream) -> Result<()> {
+pub fn write_response(response: Response, stream: &TcpStream) -> Result<()> {
     let mut writer = BufWriter::new(stream);
 
     // Status line
@@ -129,7 +129,7 @@ fn write_response(response: Response, stream: &TcpStream) -> Result<()> {
     Ok(())
 }
 
-fn write_body_chunked<S: Stream>(
+pub fn write_body_chunked<S: Stream>(
     mut bytes_stream: S,
     writer: &mut BufWriter<&TcpStream>,
 ) -> Result<()> {
@@ -151,7 +151,7 @@ fn write_body_chunked<S: Stream>(
     Ok(())
 }
 
-fn write_body_static<S: Stream>(
+pub fn write_body_static<S: Stream>(
     mut bytes_stream: S,
     writer: &mut BufWriter<&TcpStream>,
 ) -> Result<()> {

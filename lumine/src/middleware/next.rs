@@ -25,6 +25,11 @@ pub struct Next<'a> {
 }
 
 impl<'a> Next<'a> {
+    #[doc(hidden)]
+    pub fn new(middlewares: &'a [&'a dyn Middleware], route: &'a dyn RouteService) -> Self {
+        Self { middlewares, route }
+    }
+
     /// Executes the next step in the middleware chain.
     pub fn run(self, request: Request) -> Result<Response> {
         if let Some((first, rest)) = self.middlewares.split_first() {
@@ -37,10 +42,5 @@ impl<'a> Next<'a> {
         } else {
             self.route.call(request)
         }
-    }
-
-    #[cfg(feature = "test")]
-    pub fn new(middlewares: &'a [&'a dyn Middleware], route: &'a dyn RouteService) -> Self {
-        Self { middlewares, route }
     }
 }

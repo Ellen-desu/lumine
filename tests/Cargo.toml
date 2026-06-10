@@ -8,7 +8,7 @@ edition = "2024"
 license = "MIT"
 
 [dependencies]
-lumine = { path = "../lumine", features = ["test"] }
+lumine = { path = "../lumine" }
 
 [[test]]
 name = "routing"
