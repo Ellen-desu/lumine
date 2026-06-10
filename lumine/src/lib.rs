@@ -25,6 +25,6 @@ pub use crate::{
 };
 
 #[doc(hidden)]
-pub use crate::internal::parser::{parse_body, parse_headers, parse_request, parse_request_line};
+pub use crate::internal::parser;
 
 pub use http;

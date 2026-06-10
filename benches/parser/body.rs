@@ -1,4 +1,5 @@
 use criterion::{Criterion, criterion_group, criterion_main};
+use lumine::parser;
 use std::{
     hint::black_box,
     io::{BufReader, Cursor},
@@ -24,7 +25,7 @@ fn benchmark(c: &mut Criterion) {
 
                 let mut reader = BufReader::new(cursor);
 
-                black_box(lumine::parse_body(size, &mut reader).unwrap())
+                black_box(parser::parse_body(size, &mut reader).unwrap())
             });
         });
     }
