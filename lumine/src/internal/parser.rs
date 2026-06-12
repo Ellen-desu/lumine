@@ -104,14 +104,8 @@ pub fn parse_request_line(line: &str, limits: Limits) -> Result<(Method, Uri, Ve
     }
 
     let version = match parts[2] {
-        "HTTP/0.9" => Version::HTTP_09,
-        "HTTP/1.0" => Version::HTTP_10,
         "HTTP/1.1" => Version::HTTP_11,
-        "HTTP/2" => Version::HTTP_2,
-        "HTTP/3" => Version::HTTP_3,
-        _ => {
-            return Err(Error::Parser);
-        }
+        _ => return Err(Error::HttpVersionNotSupported),
     };
 
     let mut query = Query::default();
