@@ -70,6 +70,9 @@ pub enum Error {
 
     #[error("query content or total is too large")]
     QueryTooLarge,
+
+    #[error("HTTP version not supported")]
+    HttpVersionNotSupported,
 }
 
 impl From<http::Error> for Error {

@@ -228,6 +228,9 @@ impl IntoResponse for Error {
             Error::QueryTooLarge => http::Response::builder()
                 .status(StatusCode::URI_TOO_LONG)
                 .body(Body::Empty),
+            Error::HttpVersionNotSupported => http::Response::builder()
+                .status(StatusCode::HTTP_VERSION_NOT_SUPPORTED)
+                .body(Body::Empty),
         }?)
     }
 }
