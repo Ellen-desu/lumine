@@ -3,6 +3,11 @@
     html_favicon_url = "https://raw.githubusercontent.com/Ellen-desu/lumine/refs/heads/main/assets/lumine.png"
 )]
 #![doc = include_str!("../README.md")]
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
+#![deny(clippy::panic)]
+#![deny(clippy::todo)]
+#![deny(clippy::unimplemented)]
 
 mod internal;
 

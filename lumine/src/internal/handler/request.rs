@@ -43,11 +43,13 @@ pub fn dispatch_request(mut request: Request, app: &Arc<Lumine<Ready>>) -> Resul
             };
 
             // Start the middleware chain and catch the panic to prevent app from crash
-            match panic::catch_unwind(AssertUnwindSafe(|| next.run(request).unwrap())) {
-                Ok(response) => response,
-                _ => http::Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(Body::Empty)?,
+            match panic::catch_unwind(AssertUnwindSafe(|| next.run(request))) {
+                Ok(Ok(response)) => response,
+                Ok(Err(_)) | Err(_) => {
+                    return Ok(http::Response::builder()
+                        .status(StatusCode::INTERNAL_SERVER_ERROR)
+                        .body(Body::Empty)?);
+                }
             }
         }
         _ => http::Response::builder()

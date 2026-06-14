@@ -64,6 +64,7 @@ impl Lumine {
     }
 }
 
+#[allow(clippy::panic)]
 impl Lumine<Building> {
     /// Finalizes the application configuration.
     ///

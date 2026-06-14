@@ -88,6 +88,7 @@ impl<'a> AsRef<[&'a str]> for Path<'a> {
     }
 }
 
+#[allow(clippy::panic)]
 impl<'a> From<&'a str> for Path<'a> {
     fn from(value: &'a str) -> Self {
         if !value.starts_with("/") {

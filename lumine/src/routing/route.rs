@@ -46,12 +46,8 @@ where
             let mut params = Params::default();
 
             for (route_part, path_parts) in self.path.iter().zip(path.as_ref()) {
-                if route_part.starts_with(":") {
-                    // If the route path is starts with ":", then take it as parameter
-                    params.insert(
-                        route_part.strip_prefix(":").unwrap().to_owned(),
-                        (*path_parts).into(),
-                    );
+                if let Some(param_name) = route_part.strip_prefix(':') {
+                    params.insert(param_name.to_owned(), (*path_parts).into());
                 } else if route_part != path_parts {
                     return None;
                 }
