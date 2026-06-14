@@ -89,24 +89,23 @@ pub fn parse_request(limits: Limits, stream: &TcpStream) -> Result<Option<Reques
 /// This function extracts the method, URI, HTTP version, and query parameters
 /// from the first line of the HTTP request.
 pub fn parse_request_line(line: &str, limits: Limits) -> Result<(Method, Uri, Version, Query)> {
-    let parts: Vec<&str> = line.split_whitespace().collect();
+    let mut parts = line.split_whitespace();
 
-    let parts_len = parts.len();
-    if parts_len != 3 {
-        return Err(Error::Parser);
-    }
+    let method = Method::from_str(parts.next().ok_or(Error::Parser)?)?;
 
-    let method = Method::from_str(parts[0])?;
-
-    let uri = Uri::from_str(parts[1])?;
+    let uri = Uri::from_str(parts.next().ok_or(Error::Parser)?)?;
     if uri.path().len() > limits.max_uri_size {
         return Err(Error::UriTooLarge);
     }
 
-    let version = match parts[2] {
+    let version = match parts.next().ok_or(Error::Parser)? {
         "HTTP/1.1" => Version::HTTP_11,
         _ => return Err(Error::HttpVersionNotSupported),
     };
+
+    if parts.next().is_some() {
+        return Err(Error::Parser);
+    }
 
     let mut query = Query::default();
 
