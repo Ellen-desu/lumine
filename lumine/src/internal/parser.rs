@@ -137,11 +137,11 @@ pub fn parse_headers(header: &str, limits: Limits) -> Result<(HeaderName, Header
     }
 
     let (key, value) = header
-        .split_once(": ")
-        .map(|(key, value)| (key.to_lowercase(), value.trim()))
+        .split_once(":")
+        .map(|(key, value)| (key, value.trim()))
         .unwrap_or_default();
 
-    let header_name = HeaderName::from_lowercase(key.as_bytes())?;
+    let header_name = HeaderName::from_str(key)?;
     let header_value = HeaderValue::from_str(value)?;
 
     Ok((header_name, header_value))
