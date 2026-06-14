@@ -27,11 +27,11 @@ impl Default for Limits {
         Self {
             max_uri_size: 8 * 1024, // 8 KB
 
-            // Maximum query size is 800 KB
+            // Maximum query size is 8 KB
             max_query_size: 8 * 1024, // 8 KB
             max_query_count: 100,
 
-            // Maximum headers size is 6.4 MB
+            // Maximum headers size is 64 KB
             max_headers_size: 64 * 1024, // 64 KB
             max_headers_count: 100,
 
