@@ -7,7 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Asynchronous runtime with Tokio.
+- *BREAKING:* Asynchronous runtime with Tokio and remove synchronous runtime.
+
+## [0.5.2] - 2026-06-15
+
+### Added
+- Official Lumine logo.
+- `HttpVersionNotSupported` enum value to `Error`.
+- Clippy config on top of `lib.rs`.
+- Handlers documentation.
+
+### Fixed
+- Header value not accepted because there's no whitespace after the colon.
+
+### Changed
+- Use global visibility for almost all objects.
+- Separate handlers functions into separate modules.
+- Use generic parameters for writer functions.
+
+### Removed
+- Unsupported HTTP versions.
 
 ## [0.5.1] - 2026-05-31
 
