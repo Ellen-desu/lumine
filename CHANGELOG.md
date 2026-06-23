@@ -7,7 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- *BREAKING:* Asynchronous runtime with Tokio and remove synchronous runtime.
+## [0.6.0] - 2026-06-23
+
+### Added
+- `#[repr(transparent)]` attribute to `Params` & `Query` struct.
+- `date` & `filestream` optional features.
+- `Timeouts` struct.
+- `rust-toolchain.toml` for toolchain management.
+- Headers validation before inserting into the request.
+- prelude module.
+- Parser, request reader, dispatcher, & response writer tests.
+- Request reader benchmark.
+
+### Changed
+- **BREAKING**: Switched from synchronous runtime to async runtime with Tokio. 
+  Synchronous APIs are no longer available. Migrate to `async fn` handlers.
+- **BREAKING:** File streaming isn't enabled by default. Enable it via the `filestream` feature.
+- `.expect()` is allowed when you're certain it won't panic.
+- `Date` header isn't included by default. Enable it via the `date` feature.
+
+### Removed
+- **BREAKING:** Synchronous runtime.
+- `Result` type alias.
+- `thiserror` dependency.
 
 ## [0.5.2] - 2026-06-15
 
@@ -50,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `UriTooLarge`, `QueryTooLarge`, `HeadersTooLarge`, `BodyTooLarge` enum values to `Error`.
 
 ### Removed
-- *BREAKING:* `Client` struct. You don't need to while loop the return of `Lumine::serve` anymore.
+- **BREAKING:** `Client` struct. You don't need to while loop the return of `Lumine::serve` anymore.
 - All dev dependencies in main crate.
 
 ### Changed
