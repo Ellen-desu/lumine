@@ -1,11 +1,11 @@
 use lumine::{
-    Body, Middleware, Next, Params, Path, Request, Response, Result, http,
-    routing::route_service::RouteService,
+    Body, Middleware, Next, Params, Path, Request, Response, routing::route_service::RouteService,
 };
 use std::sync::{Arc, Mutex};
 
 struct MockRoute;
 
+#[async_trait::async_trait]
 impl RouteService for MockRoute {
     fn matches(&self, _: &Path) -> Option<Params> {
         None
@@ -15,16 +15,16 @@ impl RouteService for MockRoute {
         false
     }
 
-    fn middlewares(&self) -> &[Box<dyn Middleware>] {
+    fn middlewares(&self) -> &[Arc<dyn Middleware + Send + Sync>] {
         &[]
     }
 
-    fn route_middleware_first(&self) -> bool {
+    fn run_before_global(&self) -> bool {
         false
     }
 
-    fn call(&self, _: Request) -> Result<Response> {
-        Ok(http::Response::new(Body::Empty))
+    async fn call(&self, _: Request) -> Response {
+        http::Response::new(Body::Empty)
     }
 }
 
@@ -33,36 +33,35 @@ struct AppendMiddleware {
     output: Arc<Mutex<Vec<&'static str>>>,
 }
 
+#[async_trait::async_trait]
 impl Middleware for AppendMiddleware {
-    fn handle(&self, request: Request, next: Next) -> Result<Response> {
+    async fn handle(&self, request: Request, next: Next) -> Response {
         self.output.lock().unwrap().push(self.text);
 
-        next.run(request)
+        next.run(request).await
     }
 }
 
-#[test]
-fn calling_middleware_and_ordering() {
+#[tokio::test]
+async fn calling_middleware_and_ordering() {
     let output = Arc::new(Mutex::new(Vec::new()));
 
-    let mw1 = AppendMiddleware {
+    let mw1 = Arc::new(AppendMiddleware {
         text: "mw1",
         output: output.clone(),
-    };
+    });
 
-    let mw2 = AppendMiddleware {
+    let mw2 = Arc::new(AppendMiddleware {
         text: "mw2",
         output: output.clone(),
-    };
+    });
 
-    let middlewares: &[&dyn Middleware] = &[&mw1, &mw2];
+    let middlewares: Vec<Arc<dyn Middleware + Send + Sync>> = vec![mw1, mw2];
 
-    let route = MockRoute;
-
-    let next = Next::new(middlewares, &route);
+    let next = Next::new(middlewares, Arc::new(MockRoute));
     let request = http::Request::new(Vec::new());
 
-    next.run(request).unwrap();
+    next.run(request).await;
 
     let result = output.lock().unwrap();
 

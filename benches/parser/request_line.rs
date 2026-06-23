@@ -1,12 +1,10 @@
 use criterion::{Criterion, criterion_group, criterion_main};
-use lumine::{Limits, parser};
+use lumine::{internal::parser, prelude::*};
 use rand::seq::SliceRandom;
 use std::hint::black_box;
 
 fn generate_request_lines(n: usize) -> Vec<String> {
     const METHODS: &[&str] = &["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"];
-
-    const VERSIONS: &[&str] = &["HTTP/1.1", "HTTP/2"];
 
     const ROUTES: &[&str] = &[
         "/",
@@ -32,7 +30,6 @@ fn generate_request_lines(n: usize) -> Vec<String> {
 
     for i in 0..n {
         let method = METHODS[i % METHODS.len()];
-        let version = VERSIONS[i % VERSIONS.len()];
         let route = ROUTES[i % ROUTES.len()];
         let agent = USER_AGENTS[i % USER_AGENTS.len()];
 
@@ -63,7 +60,7 @@ fn generate_request_lines(n: usize) -> Vec<String> {
             _ => route.to_string(),
         };
 
-        lines.push(format!("{method} {path}{query} {version}"));
+        lines.push(format!("{method} {path}{query} HTTP/1.1"));
     }
 
     lines
@@ -81,7 +78,7 @@ fn benchmark(c: &mut Criterion) {
                 shuffled.shuffle(&mut rng);
 
                 for line in shuffled.iter() {
-                    black_box(parser::parse_request_line(line, Limits::default()).unwrap());
+                    black_box(parser::parse_request_line(Limits::default(), line).unwrap());
                 }
             });
         });

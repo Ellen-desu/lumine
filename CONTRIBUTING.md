@@ -9,9 +9,9 @@ Lumine is designed to be fast, simple, and flexible. We value clarity and safety
 To maintain the quality and safety of the codebase, please adhere to the following guidelines:
 
 ### 1. Safety First
-* **No `unsafe`**: Lumine aims to be 100% safe Rust. Avoid `unsafe` blocks unless there is an absolute, performance-critical necessity that has been thoroughly discussed.
-* **Avoid `.unwrap()` and `.expect()`**: Always handle potential errors gracefully using `Result` or `Option` with patterns like `?`, `match`, or `if let`. We want to avoid runtime panics whenever possible.
-* **No `panic!`**: Use the internal `Error` type to propagate errors back to the user or the runtime.
+* **No `unsafe`**: Lumine aims to be 100% safe Rust. Avoid `unsafe` blocks unless there's an absolute, performance-critical necessity that has been thoroughly discussed.
+* **Avoid `.unwrap()`**: It panics with no context. Only use in tests, examples, or quick prototypes.
+* **`.expect()` is allowed when you're certain it won't panic**: Include a clear reason in the message, e.g. `expect("PORT must be set")`.
 
 ### 2. Idiomatic Rust
 * Follow [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/).

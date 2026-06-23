@@ -1,7 +1,14 @@
-//! HTTP request type.
+//! HTTP Request handling for Lumine.
 //!
-//! This module defines the [`Request`] type alias, which is the primary
-//! way Lumine represents incoming HTTP requests.
+//! This module provides the core [Request] type and utilities for
+//! parsing and accessing request components like query parameters
+//! and path parameters.
+
+pub mod params;
+pub mod query;
+
+#[doc(inline)]
+pub use self::{params::Params, query::Query};
 
 /// The request type used throughout Lumine.
 ///

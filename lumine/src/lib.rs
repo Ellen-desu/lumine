@@ -2,38 +2,40 @@
     html_logo_url = "https://raw.githubusercontent.com/Ellen-desu/lumine/refs/heads/main/assets/lumine.png",
     html_favicon_url = "https://raw.githubusercontent.com/Ellen-desu/lumine/refs/heads/main/assets/lumine.png"
 )]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![doc = include_str!("../README.md")]
 #![deny(clippy::unwrap_used)]
-#![deny(clippy::expect_used)]
-#![deny(clippy::panic)]
 #![deny(clippy::todo)]
 #![deny(clippy::unimplemented)]
-
-mod internal;
 
 pub mod application;
 pub mod body;
 pub mod error;
-pub mod file;
 pub mod middleware;
+pub mod prelude;
+pub mod request;
+pub mod response;
 pub mod routing;
 pub mod stream;
-pub mod types;
-pub mod utils;
+
+#[doc(hidden)]
+pub mod internal;
+
+#[cfg(feature = "filestream")]
+pub mod filestream;
 
 #[doc(inline)]
 pub use crate::{
-    application::{Lumine, limits::Limits},
-    body::Body,
+    application::{Limits, Lumine, Timeouts},
+    body::{Body, IntoBody},
     error::Error,
-    file::{Disposition, FileStream},
     middleware::{Middleware, Next},
-    routing::{IntoResponse, Params, Path, Query, Route},
-    types::{Request, Response, Result},
-    utils::SetHeaders,
+    request::{Params, Query, Request},
+    response::{IntoResponse, Response},
+    routing::Path,
+    stream::Stream,
 };
 
-#[doc(hidden)]
-pub use crate::internal::parser;
-
-pub use http;
+#[doc(inline)]
+#[cfg(feature = "filestream")]
+pub use filestream::{Disposition, FileStream};

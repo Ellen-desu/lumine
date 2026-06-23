@@ -7,6 +7,11 @@
 //! - [`Body::Bytes`]: Buffered data (e.g., `Vec<u8>`).
 //! - [`Body::Stream`]: Data provided by a type implementing the [`Stream`] trait.
 
+pub mod into_body;
+
+#[doc(inline)]
+pub use self::into_body::IntoBody;
+
 use crate::stream::Stream;
 
 /// Represents the body of an HTTP response.
@@ -56,3 +61,10 @@ impl<S: Stream> Body<S> {
         Self::Empty
     }
 }
+
+/// A type-erased response body.
+///
+/// `DynBody` is a [`Body`] that holds a boxed [`Stream`] trait object.
+/// This allows handlers to return different types of streams in a single
+/// response type.
+pub type DynBody = Body<Box<dyn Stream>>;

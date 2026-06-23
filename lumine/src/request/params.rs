@@ -3,7 +3,7 @@
 //! This module provides the [`Params`] struct, which holds dynamic segments
 //! extracted from the request path during routing.
 
-use crate::types::request::Request;
+use crate::request::Request;
 use std::{
     collections::HashMap,
     ops::{Deref, DerefMut},
@@ -53,8 +53,7 @@ use std::{
 /// use lumine::{Request, IntoResponse, Params};
 ///
 /// fn user(req: Request) -> impl IntoResponse {
-///     let params = Params::from_request(&req)
-///         .expect("route must define path parameters");
+///     let params = Params::from_request(&req);
 ///
 ///     let user_id = params
 ///         .get("userId")
@@ -66,6 +65,7 @@ use std::{
 /// }
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[repr(transparent)]
 pub struct Params(HashMap<String, String>);
 
 impl Params {
@@ -74,8 +74,15 @@ impl Params {
     /// Returns `None` if no path parameters were attached to the request,
     /// which usually means the matched route does not contain dynamic
     /// segments.
-    pub fn from_request(request: &Request) -> Option<&Self> {
-        request.extensions().get::<Self>()
+    pub fn from_request(request: &Request) -> &Self {
+        request
+            .extensions()
+            .get::<Self>()
+            .expect("path parameters are always attached")
+    }
+
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self(HashMap::with_capacity(capacity))
     }
 }
 

@@ -7,7 +7,7 @@
 //! - HTML responses with proper Content-Type
 //! - JSON responses with proper Content-Type
 //! - Status codes and HTTP semantics
-//! - File responses with FileStream
+//! - File responses with FileStream (requires `filestream` feature)
 //! - Custom response headers
 //! - Response tuples: (StatusCode, Body), (Headers, Body), etc.
 //!
@@ -17,17 +17,17 @@
 //! curl http://127.0.0.1:8080/text
 //! curl http://127.0.0.1:8080/html
 //! curl http://127.0.0.1:8080/json
-//! curl http://127.0.0.1:8080/inline
-//! curl http://127.0.0.1:8080/attachment
+//! curl http://127.0.0.1:8080/inline (needs to open in a browser)
+//! curl http://127.0.0.1:8080/attachment --output lumine.png
 //! curl http://127.0.0.1:8080/created
 //! curl http://127.0.0.1:8080/empty
 //! ```
 
-use http::{HeaderMap, HeaderValue, StatusCode, header::CONTENT_TYPE};
-use lumine::{Disposition, FileStream, IntoResponse, Lumine, Request, Result};
-use std::net::TcpListener;
+use lumine::prelude::*;
+use tokio::net::TcpListener;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
     let app = Lumine::builder()
         // Plain text response
         .route("/text", text_response)
@@ -46,7 +46,7 @@ fn main() -> Result<()> {
         .route("/empty", empty_response)
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:8080")?;
+    let listener = TcpListener::bind("127.0.0.1:8080").await?;
 
     println!("✅ Server running at http://127.0.0.1:8080");
     println!("\n📍 Response Examples:");
@@ -61,21 +61,21 @@ fn main() -> Result<()> {
     println!("\n💡 Try: curl -i http://127.0.0.1:8080/json");
     println!("⏹️  Press Ctrl+C to stop\n");
 
-    app.serve(listener)
+    app.serve(listener).await
 }
 
 /// Handler: Plain text response
 ///
 /// Lumine automatically sets Content-Type: text/plain for string responses
-fn text_response(_req: Request) -> impl IntoResponse {
+async fn text_response(_req: Request) -> impl IntoResponse {
     "This is plain text.\nMultiple lines are supported.\nAs well as special chars: !@#$%^&*()"
 }
 
 /// Handler: HTML response with explicit Content-Type header
-fn html_response(_req: Request) -> impl IntoResponse {
+async fn html_response(_req: Request) -> impl IntoResponse {
     let mut headers = HeaderMap::new();
     headers.append(
-        CONTENT_TYPE,
+        header::CONTENT_TYPE,
         HeaderValue::from_static("text/html; charset=utf-8"),
     );
 
@@ -116,9 +116,12 @@ fn html_response(_req: Request) -> impl IntoResponse {
 ///
 /// Note: JSON is passed as a string, not structured data
 /// Use serde_json for complex JSON generation
-fn json_response(_req: Request) -> impl IntoResponse {
+async fn json_response(_req: Request) -> impl IntoResponse {
     let mut headers = HeaderMap::new();
-    headers.append(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+    headers.append(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("application/json"),
+    );
 
     // In real applications, use serde_json::to_string() for complex data
     let json = r#"{
@@ -138,21 +141,30 @@ fn json_response(_req: Request) -> impl IntoResponse {
 }
 
 /// Handler: Inline response with Content-Disposition: inline
-fn inline_response(_req: Request) -> impl IntoResponse {
-    FileStream::open_with_disposition("assets/lumine.png", Disposition::Inline)
+async fn inline_response(_req: Request) -> impl IntoResponse {
+    match FileStream::open_with_disposition("assets/lumine.png", Disposition::Inline).await {
+        Ok(stream) => stream,
+        Err(_) => panic!(""),
+    }
 }
 
 /// Handler: Attachment response with Content-Disposition: attachment
-fn attachment_response(_req: Request) -> impl IntoResponse {
-    FileStream::open_with_disposition("assets/lumine.txt", Disposition::Attachment)
+async fn attachment_response(_req: Request) -> impl IntoResponse {
+    match FileStream::open_with_disposition("assets/lumine.png", Disposition::Attachment).await {
+        Ok(stream) => stream,
+        Err(_) => panic!(""),
+    }
 }
 
 /// Handler: Response with 201 Created status code
 ///
 /// Useful for POST/CREATE endpoints
-fn created_response(_req: Request) -> impl IntoResponse {
+async fn created_response(_req: Request) -> impl IntoResponse {
     let mut headers = HeaderMap::new();
-    headers.append(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+    headers.append(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("application/json"),
+    );
 
     let response = r#"{
   "status": "created",
@@ -164,9 +176,12 @@ fn created_response(_req: Request) -> impl IntoResponse {
 }
 
 /// Handler: Response with custom headers
-fn custom_headers_response(_req: Request) -> impl IntoResponse {
+async fn custom_headers_response(_req: Request) -> impl IntoResponse {
     let mut headers = HeaderMap::new();
-    headers.append(CONTENT_TYPE, HeaderValue::from_static("application/json"));
+    headers.append(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("application/json"),
+    );
     headers.append("X-Custom-Header", HeaderValue::from_static("custom-value"));
     headers.append("X-Request-ID", HeaderValue::from_static("req-12345"));
     headers.append(
@@ -187,6 +202,6 @@ fn custom_headers_response(_req: Request) -> impl IntoResponse {
 }
 
 /// Handler: Empty response body
-fn empty_response(_req: Request) -> impl IntoResponse {
+async fn empty_response(_req: Request) -> impl IntoResponse {
     (StatusCode::NO_CONTENT, "")
 }

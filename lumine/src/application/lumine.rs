@@ -8,21 +8,21 @@ use crate::{
     application::{
         limits::Limits,
         states::{Building, Ready},
+        timeouts::Timeouts,
     },
-    internal::handler::connection,
+    internal::connection,
     middleware::Middleware,
-    routing::{
-        into_response::IntoResponse, params::Params, path::Path, route::Route,
-        route_service::RouteService,
-    },
-    types::{request::Request, result::Result},
+    request::{Request, params::Params},
+    response::into_response::IntoResponse,
+    routing::{path::Path, route::Route, route_service::RouteService},
 };
 use http::Uri;
-use std::{marker::PhantomData, net::TcpListener, sync::Arc, thread, time::Duration};
+use std::{marker::PhantomData, sync::Arc};
+use tokio::{net::TcpListener, time::Duration};
 
 /// The main HTTP application structure.
 ///
-/// `Lumine` uses a compile-time state system to ensure correct API usage.
+/// [`Lumine`] uses a compile-time state system to ensure correct API usage.
 /// During the `Building` state, routes and configuration can be added.
 /// Once built, the application enters the `Ready` state and can be served.
 ///
@@ -32,14 +32,14 @@ pub struct Lumine<State = Building> {
     // Limits
     pub(crate) limits: Limits,
 
+    // Timeouts
+    pub(crate) timeouts: Timeouts,
+
     // Routes and middlewares
-    pub(crate) routes: Vec<Box<dyn RouteService>>,
-    pub(crate) middlewares: Vec<Box<dyn Middleware>>,
+    pub(crate) routes: Vec<Arc<dyn RouteService + Send + Sync>>,
+    pub(crate) middlewares: Vec<Arc<dyn Middleware + Send + Sync>>,
 
     // Timeouts
-    pub(crate) read_timeout: Duration,
-    pub(crate) write_timeout: Duration,
-
     _state: PhantomData<State>,
 }
 
@@ -53,18 +53,16 @@ impl Lumine {
         Lumine {
             limits: Limits::default(),
 
+            timeouts: Timeouts::default(),
+
             routes: Vec::new(),
             middlewares: Vec::new(),
-
-            read_timeout: Duration::from_secs(10),
-            write_timeout: Duration::from_secs(10),
 
             _state: PhantomData,
         }
     }
 }
 
-#[allow(clippy::panic)]
 impl Lumine<Building> {
     /// Finalizes the application configuration.
     ///
@@ -75,11 +73,10 @@ impl Lumine<Building> {
         Lumine {
             limits: self.limits,
 
+            timeouts: self.timeouts,
+
             routes: self.routes,
             middlewares: self.middlewares,
-
-            read_timeout: self.read_timeout,
-            write_timeout: self.write_timeout,
 
             _state: PhantomData,
         }
@@ -91,9 +88,15 @@ impl Lumine<Building> {
         self
     }
 
-    /// Specifies maximum uri size in bytes.
-    pub fn max_uri_size(mut self, max: usize) -> Self {
-        self.limits.max_uri_size = max;
+    /// Specifies the timeouts for the application.
+    pub fn timeouts(mut self, timeouts: Timeouts) -> Self {
+        self.timeouts = timeouts;
+        self
+    }
+
+    /// Specifies maximum path size in bytes.
+    pub fn max_path_size(mut self, max: usize) -> Self {
+        self.limits.max_path_size = max;
         self
     }
 
@@ -124,6 +127,24 @@ impl Lumine<Building> {
     /// Specifies maximum body size in bytes.
     pub fn max_body_size(mut self, max: usize) -> Self {
         self.limits.max_body_size = max;
+        self
+    }
+
+    /// Specifies request read timeout.
+    pub fn request_read_timeout(mut self, timeout: Duration) -> Self {
+        self.timeouts.request_read = timeout;
+        self
+    }
+
+    /// Specifies response write timeout.
+    pub fn response_write_timeout(mut self, timeout: Duration) -> Self {
+        self.timeouts.response_write = timeout;
+        self
+    }
+
+    /// Specifies stream read timeout.
+    pub fn stream_read_timeout(mut self, timeout: Duration) -> Self {
+        self.timeouts.stream_read = timeout;
         self
     }
 
@@ -173,9 +194,9 @@ impl Lumine<Building> {
     /// # Example
     ///
     /// ```rust
-    /// use lumine::{Lumine, Request, IntoResponse};
+    /// use lumine::prelude::*;
     ///
-    /// fn user(req: Request) -> impl IntoResponse {
+    /// async fn user(req: Request) -> impl IntoResponse {
     ///     "ok"
     /// }
     ///
@@ -183,25 +204,25 @@ impl Lumine<Building> {
     ///     .route("/users/:userId", user)
     ///     .build();
     /// ```
-    pub fn route<F, R>(mut self, path: &'static str, handler: F) -> Self
+    pub fn route<F, Fut, R>(mut self, path: &'static str, handler: F) -> Self
     where
-        F: Fn(Request) -> R + Send + Sync + 'static,
+        F: Fn(Request) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = R> + Send + 'static,
         R: IntoResponse,
     {
-        if path.len() > self.limits.max_uri_size {
-            panic!("URI too long");
+        if path.len() > self.limits.max_path_size {
+            panic!("Path too long");
         }
 
         let path = Path::from(path);
-
         if self.routes.iter().any(|r| r.is_duplicated(&path)) {
             panic!("Conflicting routes");
         }
 
-        self.routes.push(Box::new(Route {
+        self.routes.push(Arc::new(Route {
             path,
             middlewares: Vec::new(),
-            route_middleware_first: false,
+            run_before_global: false,
             handler,
         }));
 
@@ -212,59 +233,36 @@ impl Lumine<Building> {
     ///
     /// This method behaves similarly to [`Lumine::route`], but allows the caller
     /// to modify the constructed route before it is registered.
-    pub fn route_with<F, R, W>(mut self, path: &'static str, handler: F, with: W) -> Self
+    pub fn route_with<F, R, Fut, W>(mut self, path: &'static str, handler: F, with: W) -> Self
     where
-        F: Fn(Request) -> R + Send + Sync + 'static,
-        R: IntoResponse,
+        F: Fn(Request) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = R> + Send + 'static,
+        R: IntoResponse + Send + 'static,
         W: Fn(Route<F>) -> Route<F> + Send + Sync + 'static,
     {
+        if path.len() > self.limits.max_path_size {
+            panic!("URI too long");
+        }
+
         let path = Path::from(path);
-        for route in &self.routes {
-            if route.is_duplicated(&path) {
-                panic!("Conflicting routes");
-            }
+        if self.routes.iter().any(|r| r.is_duplicated(&path)) {
+            panic!("Conflicting routes");
         }
 
         let route = with(Route {
             path,
             middlewares: Vec::new(),
-            route_middleware_first: false,
+            run_before_global: false,
             handler,
         });
 
-        self.routes.push(Box::new(route));
+        self.routes.push(Arc::new(route));
         self
     }
 
     /// Add a new global middleware.
     pub fn middleware<M: Middleware>(mut self, middleware: M) -> Self {
-        self.middlewares.push(Box::new(middleware));
-        self
-    }
-
-    /// Set read `TcpStream` timeout.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the zero [`Duration`] is passed to this method.
-    pub fn read_timeout(mut self, duration: Duration) -> Self {
-        if duration.is_zero() {
-            panic!("The timeout duration can't be zero.");
-        }
-        self.read_timeout = duration;
-        self
-    }
-
-    /// Set write `TcpStream` timeout.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the zero [`Duration`] is passed to this method.
-    pub fn write_timeout(mut self, duration: Duration) -> Self {
-        if duration.is_zero() {
-            panic!("The timeout duration can't be zero.");
-        }
-        self.write_timeout = duration;
+        self.middlewares.push(Arc::new(middleware));
         self
     }
 }
@@ -274,32 +272,24 @@ impl Lumine<Ready> {
     ///
     /// This method consumes the application in the [`Ready`] state and begins
     /// accepting connections from the provided [`TcpListener`].
-    pub fn serve(self, listener: TcpListener) -> Result<()> {
+    pub async fn serve(self, listener: TcpListener) -> Result<(), std::io::Error> {
         let app = Arc::new(self);
 
-        for stream_result in listener.incoming() {
+        loop {
+            let (stream, _) = listener.accept().await?;
             let app = Arc::clone(&app);
 
-            if let Ok(stream) = stream_result {
-                stream.set_read_timeout(Some(app.read_timeout))?;
-                stream.set_write_timeout(Some(app.write_timeout))?;
-
-                thread::spawn(move || {
-                    let _ = connection::handle_connection(app, stream);
-                });
-            }
+            tokio::spawn(async move { connection::handle_connection(app, stream).await });
         }
-
-        Ok(())
     }
 
     /// Returns the route and parameters that matches the given URI, if one exists.
     #[doc(hidden)]
-    pub fn get_route(&self, uri: &Uri) -> Option<(&dyn RouteService, Params)> {
+    pub fn get_route(&self, uri: &Uri) -> Option<(Arc<dyn RouteService>, Params)> {
         let path_parts = Path::from(uri.path());
         for route in &self.routes {
             if let Some(params) = route.matches(&path_parts) {
-                return Some((route.as_ref(), params));
+                return Some((route.clone(), params));
             }
         }
 
@@ -311,9 +301,9 @@ impl Lumine<Ready> {
         self.limits
     }
 
-    /// Returns the maximum URI size in bytes.
-    pub fn max_uri_size(&self) -> usize {
-        self.limits.max_uri_size
+    /// Returns the maximum path size in bytes.
+    pub fn max_path_size(&self) -> usize {
+        self.limits.max_path_size
     }
 
     /// Returns the maximum total query size in bytes.
@@ -334,5 +324,25 @@ impl Lumine<Ready> {
     /// Returns the maximum body size in bytes.
     pub fn max_body_size(&self) -> usize {
         self.limits.max_body_size
+    }
+
+    /// Returns the application's timeouts.
+    pub fn timeouts(&self) -> &Timeouts {
+        &self.timeouts
+    }
+
+    /// Returns the request read timeout.
+    pub fn request_read_timeout(&self) -> Duration {
+        self.timeouts.request_read
+    }
+
+    /// Returns the response write timeout.
+    pub fn response_write_timeout(&self) -> Duration {
+        self.timeouts.response_write
+    }
+
+    /// Returns the stream read timeout.
+    pub fn stream_read_timeout(&self) -> Duration {
+        self.timeouts.stream_read
     }
 }

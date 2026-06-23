@@ -1,4 +1,4 @@
-use lumine::{Lumine, http::Uri};
+use lumine::prelude::*;
 
 #[cfg(test)]
 mod overlapping {
@@ -7,7 +7,7 @@ mod overlapping {
     #[test]
     #[should_panic(expected = "Conflicting route")]
     fn test_overlapping_1() {
-        let callback = |_| "Ok";
+        let callback = async |_| ();
         Lumine::builder()
             .route("/users/:id", callback)
             .route("/users/:id", callback);
@@ -16,7 +16,7 @@ mod overlapping {
     #[test]
     #[should_panic(expected = "Conflicting route")]
     fn test_overlapping_2() {
-        let callback = |_| "Ok";
+        let callback = async |_| ();
         Lumine::builder()
             .route("/users/:id", callback)
             .route("/users/:id/", callback);
@@ -30,22 +30,22 @@ mod invalid_routing {
     #[test]
     #[should_panic(expected = "Path can't be empty or doesn't start with \"/\"")]
     fn test_invalid_routing_1() {
-        Lumine::builder().route("", |_| ());
+        Lumine::builder().route("", async |_| ());
     }
 
     #[test]
     #[should_panic(expected = "Path can't be empty or doesn't start with \"/\"")]
     fn test_invalid_routing_2() {
-        Lumine::builder().route("users/:id", |_| ());
+        Lumine::builder().route("users/:id", async |_| ());
     }
 }
 
 #[test]
 fn static_route_matching() {
     let app = Lumine::builder()
-        .route("/", |_| ())
-        .route("/api/v2/users", |_| ())
-        .route("/posts", |_| ())
+        .route("/", async |_| ())
+        .route("/api/v2/users", async |_| ())
+        .route("/posts", async |_| ())
         .build();
 
     assert!(app.get_route(&Uri::from_static("/")).is_some());
@@ -56,7 +56,7 @@ fn static_route_matching() {
 #[test]
 fn dynamic_route_matching_and_parameters_extraction() {
     let app = Lumine::builder()
-        .route("/users/:userId/posts/:postId", |_| ())
+        .route("/users/:userId/posts/:postId", async |_| ())
         .build();
 
     let result = app.get_route(&Uri::from_static("/users/1/posts/2"));
@@ -74,8 +74,8 @@ fn dynamic_route_matching_and_parameters_extraction() {
 #[test]
 fn route_priority_static_vs_dynamic() {
     let app = Lumine::builder()
-        .route("/users/me", |_| ())
-        .route("/users/:id", |_| ())
+        .route("/users/me", async |_| ())
+        .route("/users/:id", async |_| ())
         .build();
 
     let result = app.get_route(&Uri::from_static("/users/me"));
@@ -92,6 +92,6 @@ fn route_priority_static_vs_dynamic() {
 
 #[test]
 fn trailing_slash_normalization() {
-    let app = Lumine::builder().route("/users/:id", |_| ()).build();
+    let app = Lumine::builder().route("/users/:id", async |_| ()).build();
     assert!(app.get_route(&Uri::from_static("/users/1/")).is_some());
 }

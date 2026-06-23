@@ -4,10 +4,13 @@
 //! behavior of a single route, including matching, middleware execution,
 //! and handler dispatching.
 
+use std::sync::Arc;
+
 use crate::{
     middleware::Middleware,
-    routing::{params::Params, path::Path},
-    types::{request::Request, response::Response, result::Result},
+    request::{Request, params::Params},
+    response::Response,
+    routing::path::Path,
 };
 
 /// Defines the behavior of a single route within the routing system.
@@ -33,7 +36,7 @@ use crate::{
 /// - Application-level middleware
 /// - Route-specific middleware (from [RouteService::middlewares])
 /// 3. The execution order of the middleware chain is determined by
-///    [RouteService::route_middleware_first].
+///    [RouteService::run_before_global].
 /// 4. The request is passed into the middleware chain via a Next executor.
 /// 5. After all middleware have been executed, [RouteService::call] is invoked
 ///    as the final step.
@@ -64,6 +67,7 @@ use crate::{
 ///
 /// This separation keeps routing predictable and makes route implementations
 /// easier to reason about, extend, and refactor.
+#[async_trait::async_trait]
 pub trait RouteService: Send + Sync {
     /// Attempts to match the given path segments against this route.
     ///
@@ -84,16 +88,16 @@ pub trait RouteService: Send + Sync {
 
     /// Returns the middleware configured specifically for this route.
     ///
-    /// These middleware will be combined with application-level middleware
+    /// These middleware will be combined with global-level middleware
     /// during request execution.
-    fn middlewares(&self) -> &[Box<dyn Middleware>];
+    fn middlewares(&self) -> &[Arc<dyn Middleware + Send + Sync>];
 
     /// Indicates whether route-specific middleware should be executed
-    /// before application-level middleware.
+    /// before global-level middleware.
     ///
-    /// If `true`, route middleware are executed first.
-    /// If `false`, application middleware are executed first.
-    fn route_middleware_first(&self) -> bool;
+    /// If `true`, route middlewares are executed first.
+    /// If `false`, global middlewares are executed first.
+    fn run_before_global(&self) -> bool;
 
     /// Invokes the route handler with the provided request.
     ///
@@ -101,5 +105,5 @@ pub trait RouteService: Send + Sync {
     /// matched the request path. It is responsible for executing
     /// the handler and converting its return value into an HTTP
     /// response.
-    fn call(&self, request: Request) -> Result<Response>;
+    async fn call(&self, request: Request) -> Response;
 }

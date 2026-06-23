@@ -1,35 +1,33 @@
 # Lumine
 
-A lightweight HTTP web server framework written in Rust.
+A lightweight asynchronous HTTP framework built with Rust and Tokio.
 
-[**Documentation**](https://docs.rs/lumine/latest/lumine) | [**Contributing**](https://github.com/Ellen-desu/lumine/blob/main/CONTRIBUTING.md)
+[Documentation](https://docs.rs/lumine/latest/lumine) | [Contributing](https://github.com/Ellen-desu/lumine/blob/main/CONTRIBUTING.md)
 
 Lumine is designed to be:
 
-* **Fast** — Minimal overhead with a focus on practical performance.
-* **Simple** — Clean architecture, minimal concepts, and beginner-friendly API.
-* **Flexible** — Designed to evolve without unnecessary abstractions.
+* **Fast** — Minimal overhead with efficient async I/O.
+* **Simple** — Small API surface and easy-to-follow architecture.
+* **Flexible** — Build applications without fighting framework abstractions.
 
 ---
 
 ## Why Lumine?
 
-Many Rust web frameworks introduce heavy abstractions or runtime complexity early.
+Many Rust web frameworks provide powerful features, but can introduce significant complexity.
 
-Lumine exists for cases where you want:
+Lumine aims to provide:
 
-* To **learn how HTTP servers work internally**
-* A **minimal and understandable architecture**
-* Full control with a std-first design philosophy
-* A framework that stays close to how Rust actually works
-
-> Lumine focuses on clarity first, performance second, and magic never.
+* A lightweight and approachable HTTP framework
+* A straightforward async-first architecture
+* Full control over request handling and responses
+* An API that stays close to idiomatic Rust
 
 ---
 
 ## Installation
 
-Add Lumine to your project via command line.
+Add Lumine to your project:
 
 ```bash
 cargo add lumine
@@ -37,41 +35,78 @@ cargo add lumine
 
 ---
 
-## Example
-
-A minimal **Hello World** HTTP server using Lumine.
-
-*main.rs*
+## Minimal Usage
 
 ```rust.no_run
-use lumine::{Lumine, Result};
-use std::net::TcpListener;
+use lumine::prelude::*;
+use std::io::Result;
+use tokio::net::TcpListener;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let app = Lumine::builder()
-        .route("/", |_| "Hello, World!")
+        .route("/", async |_| "Hello, World!")
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:8080")?;
+    let listener = TcpListener::bind("127.0.0.1:8080").await?;
 
-    // Start serving incoming connections
-    app.serve(listener)
+    app.serve(listener).await
 }
 ```
 
-Then open your browser at:
+---
 
-```bash
-http://127.0.0.1:8080
+## Request Handlers
+
+Handlers receive a `Request` and return any type implementing `IntoResponse`.
+
+Inline async closure:
+
+```rust
+use lumine::prelude::*;
+
+let app = Lumine::builder()
+    .route("/", async |request: Request| {
+        format!("Requested: {}", request.uri().path())
+    })
+    .build();
+```
+
+Or use a dedicated async function:
+
+```rust
+use lumine::prelude::*;
+
+async fn index(request: Request) -> impl IntoResponse {
+    format!("Requested: {}", request.uri().path())
+}
+
+let app = Lumine::builder()
+    .route("/", index)
+    .build();
+```
+
+---
+
+## Responses
+
+Returning a string automatically generates a response:
+
+```rust
+use lumine::prelude::*;
+
+async fn hello(_: Request) -> &'static str {
+    "Hello, World!"
+}
 ```
 
 ---
 
 ## Examples
 
-More complete examples are available in the `/examples` directory.
+More examples can be found in the `examples/` directory.
 
-To run an example:
+Run an example:
 
 ```bash
 cargo run --example <example-name>
@@ -79,27 +114,16 @@ cargo run --example <example-name>
 
 ---
 
-## Behind the Scenes
-
-Internally, Lumine currently uses:
-
-* `std::net::TcpListener` for networking
-* A lightweight routing mechanism
-* Internal request handling abstractions
-* An event channel for propagating client-side errors
-
-The architecture may continue evolving as the project grows.
-
----
-
 ## Project Status
 
-> ⚠️ **Early Development Warning**
+> ⚠️ Early Development
 
-Breaking changes may occur as the API evolves.
+Lumine is actively evolving and breaking changes may occur between releases.
+
+Feedback, issues, and contributions are welcome.
 
 ---
 
 ## License
 
-This project is licensed under the [MIT License](https://github.com/Ellen-desu/lumine/blob/main/LICENSE).
+Licensed under the [MIT License](https://github.com/Ellen-desu/lumine/blob/main/LICENSE).

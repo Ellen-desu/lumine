@@ -27,12 +27,12 @@
 //! curl "http://127.0.0.1:8080/users/123/posts?sort=date&limit=10"
 //! ```
 
-use http::StatusCode;
-use lumine::{IntoResponse, Lumine, Params, Query, Request, Result};
+use lumine::prelude::*;
 use serde::Serialize;
-use std::net::TcpListener;
+use tokio::net::TcpListener;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
     let app = Lumine::builder()
         // Single path parameter
         .route("/users/:id", get_user_handler)
@@ -46,7 +46,7 @@ fn main() -> Result<()> {
         .route("/", root_handler)
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:8080")?;
+    let listener = TcpListener::bind("127.0.0.1:8080").await?;
 
     println!("✅ Server running at http://127.0.0.1:8080");
     println!("\n📍 Parameter Examples:");
@@ -61,7 +61,7 @@ fn main() -> Result<()> {
     println!("   curl \"http://127.0.0.1:8080/users/10/posts?sort=date\"");
     println!("\n⏹️  Press Ctrl+C to stop\n");
 
-    app.serve(listener)
+    app.serve(listener).await
 }
 
 // ============================================================================
@@ -97,7 +97,7 @@ struct SearchResult {
 // ============================================================================
 
 /// Handler: Root endpoint
-fn root_handler(_: Request) -> impl IntoResponse {
+async fn root_handler(_: Request) -> impl IntoResponse {
     "Welcome to Parameters Example!\n\n\
      Try:\n\
      • /users/123\n\
@@ -109,17 +109,9 @@ fn root_handler(_: Request) -> impl IntoResponse {
 ///
 /// URL: /users/:id
 /// Example: /users/123
-fn get_user_handler(req: Request) -> impl IntoResponse {
+async fn get_user_handler(req: Request) -> impl IntoResponse {
     // Extract path parameters
-    let params = match Params::from_request(&req) {
-        Some(p) => p,
-        None => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "No parameters found".to_string(),
-            );
-        }
-    };
+    let params = Params::from_request(&req);
 
     // Get the 'id' parameter
     let user_id = match params.get("id") {
@@ -159,17 +151,9 @@ fn get_user_handler(req: Request) -> impl IntoResponse {
 ///
 /// URL: /search?q=term&limit=N
 /// Example: /search?q=rust&limit=5
-fn search_handler(req: Request) -> impl IntoResponse {
+async fn search_handler(req: Request) -> impl IntoResponse {
     // Extract query parameters
-    let query_params = match Query::from_request(&req) {
-        Some(q) => q,
-        None => {
-            return (
-                StatusCode::BAD_REQUEST,
-                "No query parameters provided".to_string(),
-            );
-        }
-    };
+    let query_params = Query::from_request(&req);
 
     // Get 'q' parameter (search query)
     let search_term = match query_params.get("q") {
@@ -203,16 +187,8 @@ fn search_handler(req: Request) -> impl IntoResponse {
 ///
 /// URL: /users/:user_id/posts/:postId
 /// Example: /users/10/posts/20
-fn get_post_handler(req: Request) -> impl IntoResponse {
-    let params = match Params::from_request(&req) {
-        Some(p) => p,
-        None => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Parameters not found".to_string(),
-            );
-        }
-    };
+async fn get_post_handler(req: Request) -> impl IntoResponse {
+    let params = Params::from_request(&req);
 
     // Get user ID
     let user_id = match params.get("user_id") {
@@ -248,17 +224,9 @@ fn get_post_handler(req: Request) -> impl IntoResponse {
 ///
 /// URL: /users/:user_id/posts?sort=date&limit=N
 /// Example: /users/10/posts?sort=date&limit=5
-fn list_posts_handler(req: Request) -> impl IntoResponse {
+async fn list_posts_handler(req: Request) -> impl IntoResponse {
     // Get path parameter
-    let params = match Params::from_request(&req) {
-        Some(p) => p,
-        None => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                "Parameters not found".to_string(),
-            );
-        }
-    };
+    let params = Params::from_request(&req);
 
     let user_id = match params.get("user_id") {
         Some(uid) => match uid.parse::<u32>() {
@@ -273,14 +241,14 @@ fn list_posts_handler(req: Request) -> impl IntoResponse {
 
     // Extract sort parameter (default: "recent")
     let sort = query_params
-        .and_then(|q| q.get("sort").cloned())
-        .and_then(|mut s| s.pop())
+        .get("sort")
+        .and_then(|v| v.first().cloned())
         .unwrap_or_else(|| "recent".to_string());
 
     // Extract limit parameter (default: 10)
     let limit = query_params
-        .and_then(|q| q.get("limit").cloned())
-        .and_then(|mut l| l.pop())
+        .get("limit")
+        .and_then(|v| v.first().cloned())
         .and_then(|l| l.parse::<u32>().ok())
         .unwrap_or(10);
 

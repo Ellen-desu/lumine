@@ -6,10 +6,10 @@
 //! step in the chain.
 
 use crate::{
-    middleware::Middleware,
+    middleware::Middleware, request::Request, response::Response,
     routing::route_service::RouteService,
-    types::{request::Request, response::Response, result::Result},
 };
+use std::sync::Arc;
 
 /// Represents the remaining execution chain of middlewares.
 ///
@@ -19,28 +19,37 @@ use crate::{
 ///
 /// This struct is typically passed into [`Middleware::handle`] and is used
 /// to delegate execution to the next middleware or the final route handler.
-pub struct Next<'a> {
-    pub(crate) middlewares: &'a [&'a dyn Middleware],
-    pub(crate) route: &'a dyn RouteService,
+pub struct Next {
+    pub(crate) middlewares: Arc<[Arc<dyn Middleware + Send + Sync>]>,
+    pub(crate) route: Arc<dyn RouteService>,
+    pub(crate) index: usize,
 }
 
-impl<'a> Next<'a> {
+impl Next {
     #[doc(hidden)]
-    pub fn new(middlewares: &'a [&'a dyn Middleware], route: &'a dyn RouteService) -> Self {
-        Self { middlewares, route }
+    pub fn new(
+        middlewares: Vec<Arc<dyn Middleware + Send + Sync>>,
+        route: Arc<dyn RouteService>,
+    ) -> Self {
+        Self {
+            middlewares: Arc::<[Arc<dyn Middleware + Send + Sync>]>::from(middlewares),
+            route,
+            index: 0,
+        }
     }
 
     /// Executes the next step in the middleware chain.
-    pub fn run(self, request: Request) -> Result<Response> {
-        if let Some((first, rest)) = self.middlewares.split_first() {
+    pub async fn run(self, request: Request) -> Response {
+        if let Some(middleware) = self.middlewares.get(self.index) {
             let next = Next {
-                middlewares: rest,
+                middlewares: Arc::clone(&self.middlewares),
                 route: self.route,
+                index: self.index + 1,
             };
 
-            first.handle(request, next)
+            middleware.handle(request, next).await
         } else {
-            self.route.call(request)
+            self.route.call(request).await
         }
     }
 }

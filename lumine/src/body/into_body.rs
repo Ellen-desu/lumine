@@ -4,7 +4,7 @@
 //! to be converted into a [`DynBody`]. This is used to make returning
 //! different types of content from handlers more ergonomic.
 
-use crate::{body::Body, types::dynbody::DynBody};
+use crate::body::{Body, DynBody};
 use std::str::Bytes;
 
 /// Converts a value into an HTTP-compatible body.
@@ -21,27 +21,6 @@ use std::str::Bytes;
 ///
 /// This keeps handler code ergonomic while preserving a clear separation
 /// between application logic and HTTP encoding.
-///
-/// # Implementations
-///
-/// Lumine provides built-in implementations for common string types:
-///
-/// - `&'static str`
-/// - `String`
-/// - '&String'
-/// - 'Bytes'
-///
-/// These are encoded as UTF-8 byte sequences.
-///
-/// Additional implementations (e.g. borrowed strings, byte buffers,
-/// or custom types) can be added without changing handler signatures.
-///
-/// # Notes
-///
-/// - [`IntoBody`] does not perform any content-type detection or encoding
-///   beyond producing raw bytes.
-/// - Higher-level concerns such as headers and status codes are handled
-///   elsewhere.
 pub trait IntoBody {
     /// Converts the value into a vector of raw bytes.
     fn into_body(self) -> DynBody;
@@ -80,5 +59,18 @@ impl IntoBody for &String {
 impl IntoBody for Bytes<'_> {
     fn into_body(self) -> DynBody {
         Body::Bytes(self.collect())
+    }
+}
+
+impl IntoBody for DynBody {
+    fn into_body(self) -> DynBody {
+        self
+    }
+}
+
+#[cfg(feature = "filestream")]
+impl IntoBody for crate::filestream::FileStream {
+    fn into_body(self) -> DynBody {
+        Body::Stream(Box::new(self))
     }
 }

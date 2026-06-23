@@ -8,7 +8,10 @@ edition = "2024"
 license = "MIT"
 
 [dependencies]
+http = "1.4"
 lumine = { path = "../lumine" }
+tokio = { version = "1.52", features = ["macros", "rt"] }
+async-trait = "0.1"
 
 [[test]]
 name = "routing"
@@ -17,3 +20,23 @@ path = "routing.rs"
 [[test]]
 name = "middleware"
 path = "middleware.rs"
+
+[[test]]
+name = "dispatch"
+path = "dispatch.rs"
+
+[[test]]
+name = "request_line"
+path = "parser/request_line.rs"
+
+[[test]]
+name = "header"
+path = "parser/header.rs"
+
+[[test]]
+name = "reader"
+path = "reader.rs"
+
+[[test]]
+name = "writer"
+path = "writer.rs"

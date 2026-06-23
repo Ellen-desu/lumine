@@ -4,16 +4,20 @@
 //! as response bodies. It handles file opening, metadata retrieval (like length),
 //! and provides automatic MIME type inference using the `infer` crate.
 //!
-//! `FileStream` implements the [`Stream`] trait, allowing
+//! `FileStream` implements the [`Stream`](crate::stream::Stream) trait, allowing
 //! it to be used directly in a [`Body::Stream`](crate::body::Body::Stream).
 
-use crate::{file::disposition::Disposition, stream::Stream, types::result::Result};
+pub mod disposition;
+
+#[doc(inline)]
+pub use self::disposition::Disposition;
+
+use http::{HeaderMap, header};
 use std::{
-    fs::File,
-    io::{BufReader, Read},
     ops::{Deref, DerefMut},
     path::Path,
 };
+use tokio::{fs::File, io::BufReader};
 
 /// A file stream for HTTP responses.
 ///
@@ -23,14 +27,8 @@ use std::{
 #[derive(Debug)]
 pub struct FileStream {
     pub(crate) reader: BufReader<File>,
-    /// The name of the file to be sent in the `Content-Disposition` header.
-    pub(crate) filename: String,
-    /// The total size of the file in bytes.
+    pub(crate) headers: HeaderMap,
     pub(crate) length: usize,
-    /// Inferred file type information (MIME type, etc.).
-    pub(crate) mime_type: &'static str,
-    /// The disposition type for the `Content-Disposition` header.
-    pub(crate) disposition: Disposition,
 }
 
 impl FileStream {
@@ -45,10 +43,14 @@ impl FileStream {
     /// # Errors
     ///
     /// Returns an error if the file cannot be opened or if metadata cannot be retrieved.
-    pub fn open_with_disposition(path: impl AsRef<Path>, disposition: Disposition) -> Result<Self> {
+    pub async fn open_with_disposition(
+        path: impl AsRef<Path>,
+        disposition: Disposition,
+    ) -> std::io::Result<Self> {
+        let mut headers = HeaderMap::new();
         let path = path.as_ref();
 
-        let file = File::open(path)?;
+        let file = File::open(path).await?;
 
         let filename = path
             .file_name()
@@ -56,7 +58,7 @@ impl FileStream {
             .unwrap_or("download")
             .to_string();
 
-        let length = file.metadata()?.len() as usize;
+        let length = file.metadata().await?.len() as usize;
 
         let reader = BufReader::new(file);
 
@@ -65,12 +67,31 @@ impl FileStream {
             None => "application/octet-stream",
         };
 
+        headers.insert(
+            header::CONTENT_TYPE,
+            mime_type
+                .parse()
+                .expect("parsing from str to header value should never fail"),
+        );
+
+        headers.insert(
+            header::CONTENT_DISPOSITION,
+            format!(
+                "{}; filename=\"{}\"",
+                match disposition {
+                    Disposition::Attachment => "attachment",
+                    Disposition::Inline => "inline",
+                },
+                filename
+            )
+            .parse()
+            .expect("parsing from str to header value should never fail"),
+        );
+
         Ok(Self {
             reader,
-            filename,
+            headers,
             length,
-            mime_type,
-            disposition,
         })
     }
 }
@@ -86,15 +107,5 @@ impl Deref for FileStream {
 impl DerefMut for FileStream {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.reader
-    }
-}
-
-impl Stream for FileStream {
-    fn next_chunk(&mut self, buffer: &mut [u8]) -> Result<usize> {
-        Ok(self.reader.read(buffer)?)
-    }
-
-    fn size_hint(&self) -> Option<usize> {
-        Some(self.length)
     }
 }

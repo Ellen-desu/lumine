@@ -44,7 +44,7 @@
 //! use lumine::Lumine;
 //!
 //! let app = Lumine::builder()
-//!     .route("/", |_| "Hello, World!")
+//!     .route("/", async |_| "Hello, World!")
 //!     .build();
 //! ```
 //!
@@ -67,9 +67,12 @@
 pub mod limits;
 pub mod lumine;
 pub mod states;
+pub mod timeouts;
 
+#[doc(inline)]
 pub use self::{
     limits::Limits,
     lumine::Lumine,
     states::{Building, Ready},
+    timeouts::Timeouts,
 };

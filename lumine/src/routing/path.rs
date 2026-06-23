@@ -66,19 +66,20 @@ use std::ops::{Deref, DerefMut};
 /// - This type is primarily intended for internal use by the
 ///   routing system.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[repr(transparent)]
 pub struct Path<'a>(Vec<&'a str>);
-
-impl<'a> DerefMut for Path<'a> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
 
 impl<'a> Deref for Path<'a> {
     type Target = Vec<&'a str>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl<'a> DerefMut for Path<'a> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 

@@ -1,126 +1,60 @@
 //! HTTP request parsing module.
 //!
-//! This module provides functionality for parsing HTTP request lines, headers,
-//! and bodies from a TCP stream.
+//! This module provides functionality for parsing HTTP request lines, and headers.
+//! For body, we just read the raw bytes and pass them along.
 
-use crate::{
-    application::limits::Limits,
-    error::Error,
-    routing::query::Query,
-    types::{request::Request, result::Result},
-};
-use http::{HeaderMap, HeaderName, HeaderValue, Method, Uri, Version, header};
-use std::{
-    io::{BufRead, BufReader},
-    net::TcpStream,
-    str::FromStr,
-};
-
-/// Parses an entire HTTP request from a TCP stream.
-///
-/// This function reads the request line, headers, and body from the stream
-/// and constructs a `Request` object.
-pub fn parse_request(limits: Limits, stream: &TcpStream) -> Result<Option<Request>> {
-    let mut reader = BufReader::new(stream);
-    let mut buffer = String::new();
-
-    // Request line
-    if let Ok(0) = reader.read_line(&mut buffer) {
-        return Ok(None);
-    }
-
-    let (method, uri, version, query) = parse_request_line(&buffer, limits)?;
-
-    // Headers
-    let mut headers = HeaderMap::new();
-    loop {
-        if headers.len() >= limits.max_headers_count {
-            return Err(Error::HeadersTooLarge);
-        }
-
-        buffer.clear();
-        if let Ok(0) = reader.read_line(&mut buffer) {
-            return Ok(None);
-        }
-
-        if buffer.trim().is_empty() {
-            break;
-        }
-
-        let (key, value) = parse_headers(&buffer, limits)?;
-
-        headers.append(key, value);
-    }
-
-    let body = match headers.get(header::CONTENT_LENGTH) {
-        Some(value) => {
-            let content_length = value
-                .to_str()
-                .map_err(|_| Error::Parser)?
-                .parse::<usize>()
-                .map_err(|_| Error::Parser)?;
-
-            if content_length > limits.max_body_size {
-                return Err(Error::BodyTooLarge);
-            }
-
-            parse_body(content_length, &mut reader)?
-        }
-        _ => Vec::new(),
-    };
-
-    let mut builder = http::Request::builder()
-        .method(method)
-        .uri(uri)
-        .version(version);
-
-    for (key, value) in headers.iter() {
-        builder = builder.header(key, value);
-    }
-
-    let mut request = builder.body(body)?;
-    request.extensions_mut().insert(query);
-
-    Ok(Some(request))
-}
+use crate::{application::limits::Limits, error::Error, request::query::Query};
+use http::{HeaderName, HeaderValue, Method, Uri, Version};
+use std::str::FromStr;
 
 /// Parses the HTTP request line.
 ///
 /// This function extracts the method, URI, HTTP version, and query parameters
 /// from the first line of the HTTP request.
-pub fn parse_request_line(line: &str, limits: Limits) -> Result<(Method, Uri, Version, Query)> {
+pub fn parse_request_line(
+    limits: Limits,
+    line: &str,
+) -> Result<(Method, Uri, Version, Query), Error> {
     let mut parts = line.split_whitespace();
 
-    let method = Method::from_str(parts.next().ok_or(Error::Parser)?)?;
+    let method = Method::from_str(parts.next().ok_or(Error::InvalidRequestLine)?)?;
 
-    let uri = Uri::from_str(parts.next().ok_or(Error::Parser)?)?;
-    if uri.path().len() > limits.max_uri_size {
+    let raw_uri = parts.next().ok_or(Error::InvalidRequestLine)?;
+    if raw_uri.len() > limits.max_path_size + limits.max_query_size + 1 {
+        // +1 for the query string delimiter '?'
         return Err(Error::UriTooLarge);
     }
 
-    let version = match parts.next().ok_or(Error::Parser)? {
+    let uri = Uri::from_str(raw_uri)?;
+    if uri.path().len() > limits.max_path_size {
+        return Err(Error::UriTooLarge);
+    }
+
+    let version = match parts.next().ok_or(Error::InvalidRequestLine)? {
         "HTTP/1.1" => Version::HTTP_11,
         _ => return Err(Error::HttpVersionNotSupported),
     };
 
     if parts.next().is_some() {
-        return Err(Error::Parser);
+        return Err(Error::InvalidRequestLine);
     }
 
-    let mut query = Query::default();
+    let mut query = Query::with_capacity(8);
+    let mut pairs = 0;
 
     if let Some(query_str) = uri.query() {
+        if query_str.len() > limits.max_query_size {
+            return Err(Error::QueryTooLarge);
+        }
+
         for (key, value) in form_urlencoded::parse(query_str.as_bytes()).into_owned() {
-            if key.len() > limits.max_query_size
-                || value.len() > limits.max_query_size
-                || query.len() > limits.max_query_count
-            {
+            pairs += 1;
+
+            if pairs > limits.max_query_count {
                 return Err(Error::QueryTooLarge);
             }
-            query
-                .entry(key.to_string())
-                .or_default()
-                .push(value.to_string());
+
+            query.entry(key).or_default().push(value);
         }
     }
 
@@ -131,26 +65,15 @@ pub fn parse_request_line(line: &str, limits: Limits) -> Result<(Method, Uri, Ve
 ///
 /// This function splits the line into key-value pair and returns a `HeaderName`
 /// and `HeaderValue`.
-pub fn parse_headers(header: &str, limits: Limits) -> Result<(HeaderName, HeaderValue)> {
+pub fn parse_header(limits: Limits, header: &str) -> Result<(HeaderName, HeaderValue), Error> {
     if header.len() > limits.max_headers_size {
         return Err(Error::HeadersTooLarge);
     }
 
-    let (key, value) = header
-        .split_once(":")
-        .map(|(key, value)| (key, value.trim()))
-        .unwrap_or_default();
+    let (key, value) = header.split_once(":").ok_or(Error::InvalidHeaders)?;
 
     let header_name = HeaderName::from_str(key)?;
-    let header_value = HeaderValue::from_str(value)?;
+    let header_value = HeaderValue::from_str(value.trim())?;
 
     Ok((header_name, header_value))
-}
-
-/// Reads the HTTP request body from the reader.
-pub fn parse_body<R: BufRead>(length: usize, reader: &mut R) -> Result<Vec<u8>> {
-    let mut bytes = vec![0u8; length];
-    reader.read_exact(&mut bytes)?;
-
-    Ok(bytes)
 }

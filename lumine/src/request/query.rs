@@ -3,7 +3,7 @@
 //! This module provides the [`Query`] struct, which handles the parsing
 //! and storage of query parameters from the request URI.
 
-use crate::types::request::Request;
+use crate::request::Request;
 use std::{
     collections::HashMap,
     ops::{Deref, DerefMut},
@@ -68,8 +68,7 @@ use std::{
 /// use lumine::{Request, IntoResponse, Query};
 ///
 /// fn search(req: Request) -> impl IntoResponse {
-///     let query = Query::from_request(&req)
-///         .expect("request must contain query parameters");
+///     let query = Query::from_request(&req);
 ///
 ///     if let Some(tags) = query.get("tag") {
 ///         for tag in tags {
@@ -81,6 +80,7 @@ use std::{
 /// }
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[repr(transparent)]
 pub struct Query(HashMap<String, Vec<String>>);
 
 impl Query {
@@ -89,14 +89,15 @@ impl Query {
     /// Returns `None` if no query parameters were attached to the
     /// request, which usually means the request URI does not
     /// contain a query string.
-    pub fn from_request(request: &Request) -> Option<&Self> {
-        request.extensions().get::<Self>()
+    pub fn from_request(request: &Request) -> &Self {
+        request
+            .extensions()
+            .get::<Self>()
+            .expect("query parameters are always attached")
     }
-}
 
-impl DerefMut for Query {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self(HashMap::with_capacity(capacity))
     }
 }
 
@@ -105,5 +106,11 @@ impl Deref for Query {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl DerefMut for Query {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }

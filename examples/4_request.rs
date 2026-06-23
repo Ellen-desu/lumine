@@ -27,22 +27,22 @@
 //! curl -v http://127.0.0.1:8080/info
 //! ```
 
-use http::StatusCode;
-use lumine::{IntoResponse, Lumine, Request, Result};
+use lumine::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::net::TcpListener;
+use tokio::net::TcpListener;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
     let app = Lumine::builder()
         // GET endpoint that shows request info
         .route("/info", request_info_handler)
         // POST endpoint that parses JSON body
         .route("/users", create_user_handler)
         // GET endpoint for demonstration
-        .route("/", |_| "POST to /users with JSON body")
+        .route("/", async |_| "POST to /users with JSON body")
         .build();
 
-    let listener = TcpListener::bind("127.0.0.1:8080")?;
+    let listener = TcpListener::bind("127.0.0.1:8080").await?;
 
     println!("✅ Server running at http://127.0.0.1:8080");
     println!("\n📍 Request Examples:");
@@ -55,7 +55,7 @@ fn main() -> Result<()> {
     println!("     -d '{{\"name\":\"John\",\"email\":\"john@example.com\",\"age\":30}}'");
     println!("\n⏹️  Press Ctrl+C to stop\n");
 
-    app.serve(listener)
+    app.serve(listener).await
 }
 
 // ============================================================================
@@ -90,7 +90,7 @@ struct ErrorResponse {
 // ============================================================================
 
 /// Handler: Display request information
-fn request_info_handler(req: Request) -> impl IntoResponse {
+async fn request_info_handler(req: Request) -> impl IntoResponse {
     let method = req.method().to_string();
     let uri = req.uri().to_string();
     let headers_count = req.headers().len();
@@ -118,7 +118,7 @@ fn request_info_handler(req: Request) -> impl IntoResponse {
 /// 3. Data validation
 /// 4. Appropriate status codes
 /// 5. Response generation
-fn create_user_handler(req: Request) -> impl IntoResponse {
+async fn create_user_handler(req: Request) -> impl IntoResponse {
     // ✅ STEP 1: Validate HTTP method
     if req.method() != "POST" {
         return (
