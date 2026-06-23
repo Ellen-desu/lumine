@@ -7,7 +7,7 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/Ellen-desu/lumine"
 categories = ["web-programming::http-server", "web-programming", "network-programming"]
-keywords = ["http", "web-server", "network", "lightweight", "async", "tokio"]
+keywords = ["http", "web-server", "network", "lightweight", "async"]
 
 [dependencies]
 http = "1.4"
