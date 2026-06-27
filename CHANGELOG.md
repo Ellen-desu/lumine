@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- *BREAKING:* change body to Bytes struct.
+- *BREAKING:* change route path validator.
+
 ## [0.6.0] - 2026-06-23
 
 ### Added
