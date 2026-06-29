@@ -9,14 +9,17 @@ use crate::{
     response::{default_headers::DefaultHeaders, into_response::IntoResponse},
 };
 use std::sync::Arc;
-use tokio::net::TcpStream;
+use tokio::io::{AsyncRead, AsyncWrite};
 
 /// Handles an incoming TCP connection loop.
 ///
 /// This function continuously parses requests from the stream, dispatches them
 /// to the application, and writes back the responses. It manages connection
 /// closure based on request headers.
-pub async fn handle_connection(app: Arc<Lumine<Ready>>, mut stream: TcpStream) {
+pub async fn handle_connection<Rw: AsyncRead + AsyncWrite + Unpin>(
+    app: Arc<Lumine<Ready>>,
+    mut stream: Rw,
+) {
     let timeouts = &app.timeouts;
 
     loop {

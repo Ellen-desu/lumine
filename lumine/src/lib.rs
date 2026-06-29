@@ -24,6 +24,9 @@ pub mod internal;
 #[cfg(feature = "filestream")]
 pub mod filestream;
 
+#[cfg(feature = "tls")]
+pub mod tls;
+
 #[doc(inline)]
 pub use crate::{
     application::{Limits, Lumine, Timeouts},
@@ -39,3 +42,7 @@ pub use crate::{
 #[doc(inline)]
 #[cfg(feature = "filestream")]
 pub use filestream::{Disposition, FileStream};
+
+#[doc(inline)]
+#[cfg(feature = "tls")]
+pub use tls::TlsExt;

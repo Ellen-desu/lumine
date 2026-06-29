@@ -17,10 +17,12 @@ async-trait = "0.1"
 
 infer = { version = "0.19", optional = true }
 chrono = { version = "0.4", default-features = false, features = ["now"], optional = true }
+tokio-rustls = { version = "0.26", optional = true }
 
 [features]
 filestream = ["dep:infer"]
 date = ["dep:chrono"]
+tls = ["dep:tokio-rustls"]
 
 [package.metadata.docs.rs]
 all-features = true

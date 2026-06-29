@@ -20,3 +20,7 @@ pub use http::{
 #[doc(no_inline)]
 #[cfg(feature = "filestream")]
 pub use crate::{Disposition, FileStream};
+
+#[doc(no_inline)]
+#[cfg(feature = "tls")]
+pub use crate::TlsExt;
