@@ -8,12 +8,15 @@ edition = "2024"
 license = "MIT"
 
 [dependencies]
-lumine = { path = "../lumine", features = ["filestream"] }
+lumine = { path = "../lumine", features = ["filestream", "tls"] }
 http = "1.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.52", features = ["rt-multi-thread", "macros"] }
 async-trait = "0.1"
+tokio-rustls = { version = "0.26" }
+rustls-pki-types = { version = "1.14" }
+
 
 [[example]]
 name = "hello_world"
@@ -38,3 +41,7 @@ path = "5_parameters.rs"
 [[example]]
 name = "middleware"
 path = "6_middleware.rs"
+
+[[example]]
+name = "tls"
+path = "7_tls.rs"
