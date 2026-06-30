@@ -16,12 +16,12 @@ tokio = { version =  "1.52", features = ["net", "rt","io-util", "fs", "time"] }
 async-trait = "0.1"
 
 infer = { version = "0.19", optional = true }
-chrono = { version = "0.4", default-features = false, features = ["now"], optional = true }
+time = { version = "0.3", features = ["formatting", "macros"], optional = true }
 tokio-rustls = { version = "0.26", optional = true }
 
 [features]
 filestream = ["dep:infer"]
-date = ["dep:chrono"]
+date = ["dep:time"]
 tls = ["dep:tokio-rustls"]
 
 [package.metadata.docs.rs]

@@ -12,11 +12,9 @@ impl DefaultHeaders for Response {
         #[cfg(feature = "date")]
         parts.headers.insert(
             header::DATE,
-            chrono::Utc::now()
-                .format("%a, %d %b %Y %H:%M:%S GMT")
-                .to_string()
-                .parse()
-                .expect("valid http date format"),
+            time::OffsetDateTime::now_utc().format(time::macros::format_description!(
+                "[weekday repr:short], [day] [month repr:short] [year] [hour]:[minute]:[second] GMT"
+            )).expect("valid HTTP format").parse().expect("Parse to header should always work"),
         );
 
         parts.headers.insert(
