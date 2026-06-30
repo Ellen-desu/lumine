@@ -20,16 +20,12 @@ impl TlsExt for Lumine<Ready> {
         let acceptor = TlsAcceptor::from(Arc::new(config));
 
         loop {
-            let (stream, _) = listener.accept().await?;
-
-            let app = Arc::clone(&app);
-            let acceptor = acceptor.clone();
-
-            tokio::spawn(async move {
-                if let Ok(tls_stream) = acceptor.accept(stream).await {
-                    connection::handle_connection(app, tls_stream).await
-                }
-            });
+            if let Ok((stream, _)) = listener.accept().await
+                && let Ok(tls_stream) = acceptor.accept(stream).await
+            {
+                let app = Arc::clone(&app);
+                tokio::spawn(async move { connection::handle_connection(app, tls_stream).await });
+            }
         }
     }
 }
