@@ -9,14 +9,18 @@ license = "MIT"
 
 [dependencies]
 lumine = { path = "../lumine", features = ["filestream", "tls"] }
-http = "1.4"
+tokio = { version = "1.52", features = ["rt-multi-thread", "macros"] }
+
+# Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = { version = "1.52", features = ["rt-multi-thread", "macros"] }
+
+# Middleware
 async-trait = "0.1"
+
+# TLS
 tokio-rustls = { version = "0.26" }
 rustls-pki-types = { version = "1.14" }
-
 
 [[example]]
 name = "hello_world"
