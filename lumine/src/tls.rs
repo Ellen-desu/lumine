@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use std::{io::Result, sync::Arc};
+use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio_rustls::{TlsAcceptor, rustls::ServerConfig};
 
@@ -10,12 +10,12 @@ use crate::{
 
 #[async_trait]
 pub trait TlsExt {
-    async fn serve_tls(self, listener: TcpListener, config: ServerConfig) -> Result<()>;
+    async fn serve_tls(self, listener: TcpListener, config: ServerConfig);
 }
 
 #[async_trait]
 impl TlsExt for Lumine<Ready> {
-    async fn serve_tls(self, listener: TcpListener, config: ServerConfig) -> Result<()> {
+    async fn serve_tls(self, listener: TcpListener, config: ServerConfig) {
         let app = Arc::new(self);
         let acceptor = TlsAcceptor::from(Arc::new(config));
 

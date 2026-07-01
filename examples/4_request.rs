@@ -32,7 +32,7 @@ use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
 
 #[tokio::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> anyhow::Result<()> {
     let app = Lumine::builder()
         // GET endpoint that shows request info
         .route("/info", request_info_handler)
@@ -55,7 +55,9 @@ async fn main() -> std::io::Result<()> {
     println!("     -d '{{\"name\":\"John\",\"email\":\"john@example.com\",\"age\":30}}'");
     println!("\n⏹️  Press Ctrl+C to stop\n");
 
-    app.serve(listener).await
+    app.serve(listener).await;
+
+    Ok(())
 }
 
 // ============================================================================

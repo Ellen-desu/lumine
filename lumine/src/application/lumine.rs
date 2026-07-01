@@ -272,14 +272,14 @@ impl Lumine<Ready> {
     ///
     /// This method consumes the application in the [`Ready`] state and begins
     /// accepting connections from the provided [`TcpListener`].
-    pub async fn serve(self, listener: TcpListener) -> Result<(), std::io::Error> {
+    pub async fn serve(self, listener: TcpListener) {
         let app = Arc::new(self);
 
         loop {
-            let (stream, _) = listener.accept().await?;
-            let app = Arc::clone(&app);
-
-            tokio::spawn(async move { connection::handle_connection(app, stream).await });
+            if let Ok((stream, _)) = listener.accept().await {
+                let app = Arc::clone(&app);
+                tokio::spawn(async move { connection::handle_connection(app, stream).await });
+            }
         }
     }
 

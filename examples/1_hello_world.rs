@@ -17,7 +17,7 @@ use lumine::prelude::*;
 use tokio::net::TcpListener;
 
 #[tokio::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> anyhow::Result<()> {
     // Create application with one simple route
     let app = Lumine::builder().route("/", hello_handler).build();
 
@@ -28,7 +28,9 @@ async fn main() -> std::io::Result<()> {
     println!("💡 Try: curl http://127.0.0.1:8080");
     println!("⏹️  Press Ctrl+C to stop\n");
 
-    app.serve(listener).await
+    app.serve(listener).await;
+
+    Ok(())
 }
 /// Simple handler that returns "Hello, World!"
 async fn hello_handler(_req: Request) -> impl IntoResponse {

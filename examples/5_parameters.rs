@@ -32,7 +32,7 @@ use serde::Serialize;
 use tokio::net::TcpListener;
 
 #[tokio::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> anyhow::Result<()> {
     let app = Lumine::builder()
         // Single path parameter
         .route("/users/:id", get_user_handler)
@@ -61,7 +61,9 @@ async fn main() -> std::io::Result<()> {
     println!("   curl \"http://127.0.0.1:8080/users/10/posts?sort=date\"");
     println!("\n⏹️  Press Ctrl+C to stop\n");
 
-    app.serve(listener).await
+    app.serve(listener).await;
+
+    Ok(())
 }
 
 // ============================================================================

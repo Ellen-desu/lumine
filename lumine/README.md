@@ -39,18 +39,19 @@ cargo add lumine
 
 ```rust.no_run
 use lumine::prelude::*;
-use std::io::Result;
 use tokio::net::TcpListener;
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> anyhow::Result<()> {
     let app = Lumine::builder()
         .route("/", async |_| "Hello, World!")
         .build();
 
     let listener = TcpListener::bind("127.0.0.1:8080").await?;
 
-    app.serve(listener).await
+    app.serve(listener).await;
+
+    Ok(())
 }
 ```
 
@@ -90,14 +91,26 @@ let app = Lumine::builder()
 
 ## Responses
 
-Returning a string automatically generates a response:
+Anything that implements [`IntoResponse`](https://docs.rs/lumine/latest/lumine/trait.IntoResponse.html) can be returned from handlers.
 
 ```rust
 use lumine::prelude::*;
 
-async fn hello(_: Request) -> &'static str {
+async fn plain_text(_: Request) -> &'static str {
     "Hello, World!"
 }
+
+async fn json(_: Request) -> impl IntoResponse {
+    let mut headers = HeaderMap::new();
+    headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("application/json"));
+    
+    (StatusCode::CREATED, headers, "Hello, World!")
+}
+
+let app = Lumine::builder()
+    .route("/", plain_text)
+    .route("/json", json)
+    .build();
 ```
 
 ---

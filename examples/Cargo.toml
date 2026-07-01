@@ -10,6 +10,7 @@ license = "MIT"
 [dependencies]
 lumine = { path = "../lumine", features = ["filestream", "tls"] }
 tokio = { version = "1.52", features = ["rt-multi-thread", "macros"] }
+anyhow = "1.0"
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }

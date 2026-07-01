@@ -27,7 +27,7 @@ use lumine::prelude::*;
 use tokio::net::TcpListener;
 
 #[tokio::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> anyhow::Result<()> {
     let app = Lumine::builder()
         // Plain text response
         .route("/text", text_response)
@@ -61,7 +61,9 @@ async fn main() -> std::io::Result<()> {
     println!("\n💡 Try: curl -i http://127.0.0.1:8080/json");
     println!("⏹️  Press Ctrl+C to stop\n");
 
-    app.serve(listener).await
+    app.serve(listener).await;
+
+    Ok(())
 }
 
 /// Handler: Plain text response

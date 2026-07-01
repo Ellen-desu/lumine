@@ -29,7 +29,7 @@ use tokio::net::TcpListener;
 use tokio_rustls::rustls::ServerConfig;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     let app = Lumine::builder()
         .route("/", async |_| "Hello, World!")
         .build();
@@ -47,5 +47,7 @@ async fn main() {
     println!("💡 Try: curl https://127.0.0.1:8080");
     println!("⏹️  Press Ctrl+C to stop\n");
 
-    app.serve_tls(listener, config).await.unwrap();
+    app.serve_tls(listener, config).await;
+
+    Ok(())
 }

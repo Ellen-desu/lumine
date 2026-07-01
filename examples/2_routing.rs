@@ -21,7 +21,7 @@ use lumine::prelude::*;
 use tokio::net::TcpListener;
 
 #[tokio::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> anyhow::Result<()> {
     let app = Lumine::builder()
         // Homepage
         .route("/", index_handler)
@@ -45,7 +45,9 @@ async fn main() -> std::io::Result<()> {
     println!("\n💡 Try: curl http://127.0.0.1:8080/api/status");
     println!("⏹️  Press Ctrl+C to stop\n");
 
-    app.serve(listener).await
+    app.serve(listener).await;
+
+    Ok(())
 }
 
 /// Handler: Homepage

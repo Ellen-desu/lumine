@@ -54,7 +54,7 @@ impl Middleware for Auth {
 }
 
 #[tokio::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> anyhow::Result<()> {
     // Create application with:
     // - One route using route-specific middleware (Auth)
     // - One global middleware (Logger)
@@ -74,7 +74,9 @@ async fn main() -> std::io::Result<()> {
     println!("💡 Try: curl http://127.0.0.1:8080");
     println!("⏹️  Press Ctrl+C to stop\n");
 
-    app.serve(listener).await
+    app.serve(listener).await;
+
+    Ok(())
 }
 
 /// Simple handler
