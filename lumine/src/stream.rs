@@ -6,7 +6,6 @@
 //! without loading the entire content into memory.
 
 use http::HeaderMap;
-use tokio::io::AsyncReadExt;
 
 /// A trait for types that can provide data in chunks.
 ///
@@ -51,6 +50,8 @@ impl<T: Stream + ?Sized> Stream for Box<T> {
 #[async_trait::async_trait]
 impl Stream for crate::filestream::FileStream {
     async fn next_chunk(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+        use tokio::io::AsyncReadExt;
+
         self.reader.read(buffer).await
     }
 
