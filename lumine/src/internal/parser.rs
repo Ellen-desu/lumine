@@ -37,6 +37,7 @@ pub fn parse_request_line(
         return Err(Error::HttpVersionNotSupported);
     };
 
+    // The request line should only contain the method, URI, and version.
     if parts.next().is_some() {
         return Err(Error::InvalidRequestLine);
     }
