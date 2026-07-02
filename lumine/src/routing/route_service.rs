@@ -9,8 +9,8 @@ use std::sync::Arc;
 use crate::{
     middleware::Middleware,
     request::{Request, params::Params},
-    response::Response,
-    routing::path::Path,
+    response::{Response, into_response::IntoResponse},
+    routing::{path::Path, route::Route},
 };
 
 /// Defines the behavior of a single route within the routing system.
@@ -106,4 +106,42 @@ pub trait RouteService: Send + Sync {
     /// the handler and converting its return value into an HTTP
     /// response.
     async fn call(&self, request: Request) -> Response;
+}
+
+#[async_trait::async_trait]
+impl<'a, F, Fut, R> RouteService for Route<'a, F>
+where
+    F: Fn(Request) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = R> + Send + 'static,
+    R: IntoResponse,
+{
+    fn matches(&self, path: &Path) -> Option<Params> {
+        if path.len() != self.path.len() {
+            None
+        } else {
+            let mut params = Params::with_capacity(4);
+
+            for (route_part, path_parts) in self.path.iter().zip(path.as_ref()) {
+                if let Some(param_name) = route_part.strip_prefix(':') {
+                    params.insert(param_name.to_owned(), (*path_parts).into());
+                } else if route_part != path_parts {
+                    return None;
+                }
+            }
+
+            Some(params)
+        }
+    }
+    fn middlewares(&self) -> &[Arc<dyn Middleware>] {
+        &self.middlewares
+    }
+    fn run_before_global(&self) -> bool {
+        self.run_before_global
+    }
+    fn is_duplicated(&self, path: &Path) -> bool {
+        *self.path == **path
+    }
+    async fn call(&self, request: Request) -> Response {
+        (self.handler)(request).await.into_response()
+    }
 }
