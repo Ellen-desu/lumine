@@ -6,12 +6,15 @@ use http::{HeaderMap, header};
 
 /// Validates the headers of an HTTP request and returns a [`Framing`] instance.
 pub fn validate_headers(headers: &HeaderMap) -> Result<Framing, Error> {
-    let has_content_length = headers.contains_key(header::CONTENT_LENGTH);
+    // RFC 9112: The HOST header field is required
+    if !headers.contains_key(header::HOST) {
+        return Err(Error::InvalidHeaders);
+    }
 
+    let has_content_length = headers.contains_key(header::CONTENT_LENGTH);
     let has_transfer_encoding = headers.contains_key(header::TRANSFER_ENCODING);
 
-    // RFC 9112:
-    // Do not accept Content-Length + Transfer-Encoding
+    // RFC 9112: Do not accept Content-Length + Transfer-Encoding
     if has_content_length && has_transfer_encoding {
         return Err(Error::InvalidHeaders);
     }

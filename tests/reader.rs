@@ -27,10 +27,11 @@ async fn get_request() {
 #[tokio::test]
 async fn post_request_with_body() {
     let raw = b"POST /hello HTTP/1.1\r\n\
-                 Content-Type: text/plain\r\n\
-                 Content-Length: 13\r\n\
-                 \r\n\
-                 Hello, World!";
+        Host: localhost\r\n\
+        Content-Type: text/plain\r\n\
+        Content-Length: 13\r\n\
+        \r\n\
+        Hello, World!";
     let mut reader = BufReader::new(&raw[..]);
 
     let (request, _) = read_request(&mut reader, Limits::default())
@@ -42,7 +43,7 @@ async fn post_request_with_body() {
     assert_eq!(request.uri().path(), "/hello");
 
     let headers = request.headers();
-    assert_eq!(headers.len(), 2);
+    assert_eq!(headers.len(), 3);
     assert_eq!(
         headers.get("content-type"),
         Some(&HeaderValue::from_static("text/plain"))
