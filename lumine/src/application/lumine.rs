@@ -36,8 +36,8 @@ pub struct Lumine<State = Building> {
     pub(crate) timeouts: Timeouts,
 
     // Routes and middlewares
-    pub(crate) routes: Vec<Arc<dyn RouteService + Send + Sync>>,
-    pub(crate) middlewares: Vec<Arc<dyn Middleware + Send + Sync>>,
+    pub(crate) routes: Vec<Arc<dyn RouteService>>,
+    pub(crate) middlewares: Vec<Arc<dyn Middleware>>,
 
     // States
     _state: PhantomData<State>,

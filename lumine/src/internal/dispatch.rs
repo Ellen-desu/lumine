@@ -35,7 +35,7 @@ pub async fn dispatch_request(mut request: Request, app: &Arc<Lumine<Ready>>) ->
             chain.extend(iter);
 
             let next = Next {
-                middlewares: Arc::<[Arc<dyn Middleware + Send + Sync>]>::from(chain),
+                middlewares: Arc::<[Arc<dyn Middleware>]>::from(chain),
                 route: route.clone(),
                 index: 0,
             };

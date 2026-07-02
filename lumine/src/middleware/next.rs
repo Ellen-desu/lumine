@@ -20,19 +20,16 @@ use std::sync::Arc;
 /// This struct is typically passed into [`Middleware::handle`] and is used
 /// to delegate execution to the next middleware or the final route handler.
 pub struct Next {
-    pub(crate) middlewares: Arc<[Arc<dyn Middleware + Send + Sync>]>,
+    pub(crate) middlewares: Arc<[Arc<dyn Middleware>]>,
     pub(crate) route: Arc<dyn RouteService>,
     pub(crate) index: usize,
 }
 
 impl Next {
     #[doc(hidden)]
-    pub fn new(
-        middlewares: Vec<Arc<dyn Middleware + Send + Sync>>,
-        route: Arc<dyn RouteService>,
-    ) -> Self {
+    pub fn new(middlewares: Vec<Arc<dyn Middleware>>, route: Arc<dyn RouteService>) -> Self {
         Self {
-            middlewares: Arc::<[Arc<dyn Middleware + Send + Sync>]>::from(middlewares),
+            middlewares: Arc::<[Arc<dyn Middleware>]>::from(middlewares),
             route,
             index: 0,
         }

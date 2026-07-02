@@ -15,7 +15,7 @@ impl RouteService for MockRoute {
         false
     }
 
-    fn middlewares(&self) -> &[Arc<dyn Middleware + Send + Sync>] {
+    fn middlewares(&self) -> &[Arc<dyn Middleware>] {
         &[]
     }
 
@@ -56,7 +56,7 @@ async fn calling_middleware_and_ordering() {
         output: output.clone(),
     });
 
-    let middlewares: Vec<Arc<dyn Middleware + Send + Sync>> = vec![mw1, mw2];
+    let middlewares: Vec<Arc<dyn Middleware>> = vec![mw1, mw2];
 
     let next = Next::new(middlewares, Arc::new(MockRoute));
     let request = http::Request::new(Vec::new());

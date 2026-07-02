@@ -90,7 +90,7 @@ pub trait RouteService: Send + Sync {
     ///
     /// These middleware will be combined with global-level middleware
     /// during request execution.
-    fn middlewares(&self) -> &[Arc<dyn Middleware + Send + Sync>];
+    fn middlewares(&self) -> &[Arc<dyn Middleware>];
 
     /// Indicates whether route-specific middleware should be executed
     /// before global-level middleware.

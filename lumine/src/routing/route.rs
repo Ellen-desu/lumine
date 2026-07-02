@@ -18,7 +18,7 @@ use crate::{
 /// A concrete route that matches a path and dispatches to a handler.
 pub struct Route<'a, F> {
     pub(crate) path: Path<'a>,
-    pub(crate) middlewares: Vec<Arc<dyn Middleware + Send + Sync>>,
+    pub(crate) middlewares: Vec<Arc<dyn Middleware>>,
     pub(crate) run_before_global: bool,
     pub(crate) handler: F,
 }
@@ -61,7 +61,7 @@ where
             Some(params)
         }
     }
-    fn middlewares(&self) -> &[Arc<dyn Middleware + Send + Sync>] {
+    fn middlewares(&self) -> &[Arc<dyn Middleware>] {
         &self.middlewares
     }
     fn run_before_global(&self) -> bool {
