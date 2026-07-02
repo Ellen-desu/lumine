@@ -30,9 +30,11 @@ pub fn parse_request_line(
         return Err(Error::UriTooLarge);
     }
 
-    let version = match parts.next().ok_or(Error::InvalidRequestLine)? {
-        "HTTP/1.1" => Version::HTTP_11,
-        _ => return Err(Error::HttpVersionNotSupported),
+    // Lumine is only supported on HTTP/1.1. You can use reverse proxy(e.g. Nginx, or Caddy) to support other versions.
+    let version = if parts.next().ok_or(Error::InvalidRequestLine)? == "HTTP/1.1" {
+        Version::HTTP_11
+    } else {
+        return Err(Error::HttpVersionNotSupported);
     };
 
     if parts.next().is_some() {
