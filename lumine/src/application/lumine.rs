@@ -18,7 +18,7 @@ use crate::{
 };
 use http::Uri;
 use std::{marker::PhantomData, sync::Arc};
-use tokio::{net::TcpListener, time::Duration};
+use tokio::net::TcpListener;
 
 /// The main HTTP application structure.
 ///
@@ -63,6 +63,7 @@ impl Lumine {
     }
 }
 
+#[allow(clippy::panic)] // allow panics in the builder
 impl Lumine<Building> {
     /// Finalizes the application configuration.
     ///
@@ -94,57 +95,9 @@ impl Lumine<Building> {
         self
     }
 
-    /// Specifies maximum path size in bytes.
-    pub fn max_path_size(mut self, max: usize) -> Self {
-        self.limits.max_path_size = max;
-        self
-    }
-
-    /// Specifies maximum headers size in bytes.
-    pub fn max_headers_size(mut self, max: usize) -> Self {
-        self.limits.max_headers_size = max;
-        self
-    }
-
-    /// Specifies maximum headers count.
-    pub fn max_headers_count(mut self, max: usize) -> Self {
-        self.limits.max_headers_count = max;
-        self
-    }
-
-    /// Specifies maximum query size in bytes.
-    pub fn max_query_size(mut self, max: usize) -> Self {
-        self.limits.max_query_size = max;
-        self
-    }
-
-    /// Specifies maximum query count.
-    pub fn max_query_count(mut self, max: usize) -> Self {
-        self.limits.max_query_count = max;
-        self
-    }
-
-    /// Specifies maximum body size in bytes.
-    pub fn max_body_size(mut self, max: usize) -> Self {
-        self.limits.max_body_size = max;
-        self
-    }
-
-    /// Specifies request read timeout.
-    pub fn request_read_timeout(mut self, timeout: Duration) -> Self {
-        self.timeouts.request_read = timeout;
-        self
-    }
-
-    /// Specifies response write timeout.
-    pub fn response_write_timeout(mut self, timeout: Duration) -> Self {
-        self.timeouts.response_write = timeout;
-        self
-    }
-
-    /// Specifies stream read timeout.
-    pub fn stream_read_timeout(mut self, timeout: Duration) -> Self {
-        self.timeouts.stream_read = timeout;
+    /// Add a new global middleware.
+    pub fn middleware<M: Middleware>(mut self, middleware: M) -> Self {
+        self.middlewares.push(Arc::new(middleware));
         self
     }
 
@@ -259,12 +212,6 @@ impl Lumine<Building> {
         self.routes.push(Arc::new(route));
         self
     }
-
-    /// Add a new global middleware.
-    pub fn middleware<M: Middleware>(mut self, middleware: M) -> Self {
-        self.middlewares.push(Arc::new(middleware));
-        self
-    }
 }
 
 impl Lumine<Ready> {
@@ -301,48 +248,8 @@ impl Lumine<Ready> {
         self.limits
     }
 
-    /// Returns the maximum path size in bytes.
-    pub fn max_path_size(&self) -> usize {
-        self.limits.max_path_size
-    }
-
-    /// Returns the maximum total query size in bytes.
-    pub fn max_query_size(&self) -> usize {
-        self.limits.max_query_size
-    }
-
-    /// Returns the maximum total headers size in bytes.
-    pub fn max_headers_size(&self) -> usize {
-        self.limits.max_headers_size
-    }
-
-    /// Returns the maximum number of headers allowed.
-    pub fn max_headers_count(&self) -> usize {
-        self.limits.max_headers_count
-    }
-
-    /// Returns the maximum body size in bytes.
-    pub fn max_body_size(&self) -> usize {
-        self.limits.max_body_size
-    }
-
     /// Returns the application's timeouts.
     pub fn timeouts(&self) -> &Timeouts {
         &self.timeouts
-    }
-
-    /// Returns the request read timeout.
-    pub fn request_read_timeout(&self) -> Duration {
-        self.timeouts.request_read
-    }
-
-    /// Returns the response write timeout.
-    pub fn response_write_timeout(&self) -> Duration {
-        self.timeouts.response_write
-    }
-
-    /// Returns the stream read timeout.
-    pub fn stream_read_timeout(&self) -> Duration {
-        self.timeouts.stream_read
     }
 }
