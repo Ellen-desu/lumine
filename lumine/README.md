@@ -1,8 +1,18 @@
-# Lumine
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Ellen-desu/lumine/refs/heads/main/assets/lumine.png" width="150">
+</p>
 
-A lightweight asynchronous HTTP framework built with Rust and Tokio.
+<h1 align="center">Lumine</h1>
 
-[Documentation](https://docs.rs/lumine/latest/lumine) | [Contributing](https://github.com/Ellen-desu/lumine/blob/main/CONTRIBUTING.md)
+<p align="center">
+    A lightweight asynchronous HTTP framework built with Rust and Tokio.
+</p>
+
+<p align="center">
+    <a href="https://docs.rs/lumine/latest/lumine">Documentation</a> | <a href="https://github.com/Ellen-desu/lumine/blob/main/CONTRIBUTING.md">Contributing</a>
+</p>
+
+---
 
 Lumine is designed to be:
 
