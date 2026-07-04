@@ -67,6 +67,7 @@ use crate::{
 ///
 /// This separation keeps routing predictable and makes route implementations
 /// easier to reason about, extend, and refactor.
+#[doc(hidden)]
 #[async_trait::async_trait]
 pub trait RouteService: Send + Sync {
     /// Attempts to match the given path segments against this route.
