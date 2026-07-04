@@ -23,7 +23,7 @@
 //! curl https://127.0.0.1:8080
 //! ```
 
-use lumine::{Lumine, tls::TlsExt};
+use lumine::prelude::*;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject};
 use tokio::net::TcpListener;
 use tokio_rustls::rustls::ServerConfig;

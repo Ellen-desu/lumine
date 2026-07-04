@@ -217,6 +217,25 @@ impl Lumine<Ready> {
         }
     }
 
+    #[cfg(feature = "tls")]
+    pub async fn serve_tls(
+        self,
+        listener: TcpListener,
+        config: tokio_rustls::rustls::ServerConfig,
+    ) {
+        let app = Arc::new(self);
+        let acceptor = tokio_rustls::TlsAcceptor::from(Arc::new(config));
+
+        loop {
+            if let Ok((stream, _)) = listener.accept().await
+                && let Ok(tls_stream) = acceptor.accept(stream).await
+            {
+                let app = Arc::clone(&app);
+                tokio::spawn(async move { connection::handle_connection(app, tls_stream).await });
+            }
+        }
+    }
+
     /// Returns the route and parameters that matches the given URI, if one exists.
     #[doc(hidden)]
     pub fn get_route(&self, path: &str) -> Option<(Arc<dyn RouteService>, Params)> {
