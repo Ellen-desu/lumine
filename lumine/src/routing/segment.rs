@@ -1,4 +1,3 @@
-#[doc(hidden)]
 #[derive(Debug, PartialEq, Eq)]
 pub enum Segment {
     Static(&'static str),

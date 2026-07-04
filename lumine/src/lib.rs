@@ -15,11 +15,13 @@ pub mod middleware;
 pub mod prelude;
 pub mod request;
 pub mod response;
-pub mod routing;
 pub mod stream;
 
 #[doc(hidden)]
 pub mod internal;
+
+#[doc(hidden)]
+pub mod routing;
 
 #[cfg(feature = "filestream")]
 pub mod filestream;
