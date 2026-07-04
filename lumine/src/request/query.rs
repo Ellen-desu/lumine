@@ -55,9 +55,7 @@ use std::ops::{Deref, DerefMut};
 ///
 /// # Accessing Query
 ///
-/// Use [`Query::from_request`] to retrieve query parameters
-/// from a request. This returns `None` if the request URI
-/// does not contain a query string.
+/// Use [`Query::from_request`] to retrieve query parameters.
 ///
 /// # Example
 ///
@@ -79,10 +77,6 @@ pub struct Query(Vec<(Box<str>, Vec<Box<str>>)>);
 
 impl Query {
     /// Retrieves query parameters from the request extensions.
-    ///
-    /// Returns `None` if no query parameters were attached to the
-    /// request, which usually means the request URI does not
-    /// contain a query string.
     pub fn from_request(request: &Request) -> &Self {
         request
             .extensions()
@@ -90,10 +84,17 @@ impl Query {
             .expect("query parameters are always attached")
     }
 
+    /// Creates a new `Query`.
+    pub fn new() -> Self {
+        Self(Vec::new())
+    }
+
+    /// Creates a new `Query` with the specified capacity.
     pub fn with_capacity(capacity: usize) -> Self {
         Self(Vec::with_capacity(capacity))
     }
 
+    /// Inserts a key-value pair into the query.
     pub fn insert(&mut self, key: Box<str>, value: Box<str>) {
         if let Some(values) = self.0.iter_mut().find(|(k, _)| *k == key) {
             values.1.push(value);
@@ -102,6 +103,7 @@ impl Query {
         }
     }
 
+    /// Retrieves the first value for the given key, if present.
     pub fn get(&self, key: &str) -> Option<&str> {
         self.0
             .iter()
@@ -109,6 +111,7 @@ impl Query {
             .map(|(_, v)| v[0].as_ref())
     }
 
+    /// Retrieves all values for the given key, if present.
     pub fn get_all(&self, key: &str) -> Option<impl Iterator<Item = &str>> {
         self.0
             .iter()

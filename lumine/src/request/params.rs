@@ -41,8 +41,6 @@ use std::ops::{Deref, DerefMut};
 /// # Accessing Params
 ///
 /// Use [`Params::from_request`] to retrieve parameters from a request.
-/// This returns `None` if the matched route does not define any
-/// dynamic path segments.
 ///
 /// # Example
 ///
@@ -67,10 +65,6 @@ pub struct Params(Vec<(&'static str, Box<str>)>);
 
 impl Params {
     /// Retrieves path parameters from the request extensions.
-    ///
-    /// Returns `None` if no path parameters were attached to the request,
-    /// which usually means the matched route does not contain dynamic
-    /// segments.
     pub fn from_request(request: &Request) -> &Self {
         request
             .extensions()
@@ -78,14 +72,17 @@ impl Params {
             .expect("path parameters are always attached")
     }
 
+    /// Creates a new `Params`.
     pub fn new() -> Self {
-        Self::default()
+        Self(Vec::new())
     }
 
+    /// Creates a new `Params` with the specified capacity.
     pub fn with_capacity(capacity: usize) -> Self {
         Self(Vec::with_capacity(capacity))
     }
 
+    /// Returns the value associated with the given key, if one exists.
     pub fn get(&self, key: &str) -> Option<&str> {
         self.0
             .iter()
