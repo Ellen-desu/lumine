@@ -25,16 +25,6 @@ Lumine aims to provide:
 
 ---
 
-## Installation
-
-Add Lumine to your project:
-
-```bash
-cargo add lumine
-```
-
----
-
 ## Minimal Usage
 
 ```rust.no_run
