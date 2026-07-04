@@ -8,8 +8,8 @@
 
 #[doc(no_inline)]
 pub use crate::{
-    Body, Error, IntoBody, IntoResponse, Limits, Lumine, Middleware, Next, Params, Path, Query,
-    Request, Response, Stream, Timeouts,
+    Body, Error, IntoBody, IntoResponse, Limits, Lumine, Middleware, Next, Params, Query, Request,
+    Response, Stream, Timeouts,
 };
 
 #[doc(no_inline)]

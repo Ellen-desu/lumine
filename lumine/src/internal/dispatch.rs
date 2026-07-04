@@ -18,11 +18,11 @@ use std::sync::Arc;
 /// and executes it. It also includes panic handling to ensure the application
 /// doesn't crash on handler errors.
 pub async fn dispatch_request(mut request: Request, app: &Arc<Lumine<Ready>>) -> Response {
-    let status = match app.get_route(request.uri()) {
+    let status = match app.get_route(request.uri().path()) {
         Some((route, params)) => {
             request.extensions_mut().insert(params);
 
-            let mut chain = Vec::new();
+            let mut chain = Vec::with_capacity(route.middlewares().len() + app.middlewares.len());
 
             // Choose between route or global middleware which takes precedence
             let iter = if route.run_before_global() {

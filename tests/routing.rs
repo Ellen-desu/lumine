@@ -1,43 +1,92 @@
 use lumine::prelude::*;
 
-#[cfg(test)]
-mod overlapping {
-    use super::*;
-
-    #[test]
-    #[should_panic(expected = "Conflicting route")]
-    fn test_overlapping_1() {
-        let callback = async |_| ();
-        Lumine::builder()
-            .route("/users/:id", callback)
-            .route("/users/:id", callback);
-    }
-
-    #[test]
-    #[should_panic(expected = "Conflicting route")]
-    fn test_overlapping_2() {
-        let callback = async |_| ();
-        Lumine::builder()
-            .route("/users/:id", callback)
-            .route("/users/:id/", callback);
-    }
+#[test]
+#[should_panic(expected = "Conflicting route")]
+fn overlapping_root() {
+    let callback = async |_| ();
+    Lumine::builder().route("/", callback).route("/", callback);
 }
 
-#[cfg(test)]
-mod invalid_routing {
-    use super::*;
+#[test]
+#[should_panic(expected = "Conflicting route")]
+fn overlapping_static() {
+    let callback = async |_| ();
+    Lumine::builder()
+        .route("/users", callback)
+        .route("/users", callback);
+}
 
-    #[test]
-    #[should_panic(expected = "Path can't be empty or doesn't start with \"/\"")]
-    fn test_invalid_routing_1() {
-        Lumine::builder().route("", async |_| ());
-    }
+#[test]
+#[should_panic(expected = "Conflicting route")]
+fn overlapping_unique_params() {
+    let callback = async |_| ();
+    Lumine::builder()
+        .route("/users/:id", callback)
+        .route("/users/:id", callback);
+}
 
-    #[test]
-    #[should_panic(expected = "Path can't be empty or doesn't start with \"/\"")]
-    fn test_invalid_routing_2() {
-        Lumine::builder().route("users/:id", async |_| ());
-    }
+#[test]
+#[should_panic(expected = "Conflicting route")]
+fn overlapping_dynamic_params() {
+    let callback = async |_| ();
+    Lumine::builder()
+        .route("/users/:id", callback)
+        .route("/users/:name", callback);
+}
+
+#[test]
+#[should_panic(expected = "Conflicting route")]
+fn overlapping_wildcard() {
+    let callback = async |_| ();
+    Lumine::builder()
+        .route("/users/:id", callback)
+        .route("/users/*", callback);
+}
+
+#[test]
+#[should_panic(expected = "Wildcard segment must be the last segment")]
+fn path_after_wildcard() {
+    let callback = async |_| ();
+    Lumine::builder().route("/users/*/posts", callback);
+}
+
+#[test]
+#[should_panic(expected = "Conflicting route")]
+fn dynamic_overlapping_with_wildcard() {
+    let callback = async |_| ();
+    Lumine::builder()
+        .route("/users/*", callback)
+        .route("/users/:id", callback);
+}
+
+#[test]
+#[should_panic(expected = "Conflicting route")]
+fn static_overlapping_with_wildcard() {
+    let callback = async |_| ();
+    Lumine::builder()
+        .route("/users/posts", callback)
+        .route("/users/*", callback);
+}
+
+#[test]
+#[should_panic(expected = "Path parameter must be followed by a name")]
+fn no_name_parameters() {
+    let callback = async |_| ();
+    Lumine::builder().route("/users/:", callback);
+}
+
+#[test]
+#[should_panic(expected = "Path must start with a slash and not end with a slash")]
+fn path_not_start_with_slash() {
+    let callback = async |_| ();
+    Lumine::builder().route("users/:id", callback);
+}
+
+#[test]
+#[should_panic(expected = "Path must start with a slash and not end with a slash")]
+fn path_end_with_slash() {
+    let callback = async |_| ();
+    Lumine::builder().route("/users/:id/", callback);
 }
 
 #[test]
@@ -48,9 +97,18 @@ fn static_route_matching() {
         .route("/posts", async |_| ())
         .build();
 
-    assert!(app.get_route(&Uri::from_static("/")).is_some());
-    assert!(app.get_route(&Uri::from_static("/api/v2/users")).is_some());
-    assert!(app.get_route(&Uri::from_static("/posts")).is_some());
+    assert!(app.get_route("/").is_some());
+    assert!(app.get_route("/api/v2/users").is_some());
+    assert!(app.get_route("/posts").is_some());
+}
+
+#[test]
+fn wildcard_route_matching() {
+    let app = Lumine::builder().route("/users/*", async |_| ()).build();
+
+    assert!(app.get_route("/users").is_none());
+    assert!(app.get_route("/users/1").is_some());
+    assert!(app.get_route("/users/1/posts").is_some());
 }
 
 #[test]
@@ -59,13 +117,13 @@ fn dynamic_route_matching_and_parameters_extraction() {
         .route("/users/:userId/posts/:postId", async |_| ())
         .build();
 
-    let result = app.get_route(&Uri::from_static("/users/1/posts/2"));
+    let result = app.get_route("/users/1/posts/2");
     assert!(result.is_some());
 
     match result {
         Some((_, params)) => {
-            assert_eq!(params.get("userId"), Some(&String::from("1")));
-            assert_eq!(params.get("postId"), Some(&String::from("2")));
+            assert_eq!(params.get("userId"), Some("1"));
+            assert_eq!(params.get("postId"), Some("2"));
         }
         None => unreachable!(),
     }
@@ -78,7 +136,7 @@ fn route_priority_static_vs_dynamic() {
         .route("/users/:id", async |_| ())
         .build();
 
-    let result = app.get_route(&Uri::from_static("/users/me"));
+    let result = app.get_route("/users/me");
     assert!(result.is_some());
 
     match result {
@@ -88,10 +146,4 @@ fn route_priority_static_vs_dynamic() {
         }
         None => unreachable!(),
     }
-}
-
-#[test]
-fn trailing_slash_normalization() {
-    let app = Lumine::builder().route("/users/:id", async |_| ()).build();
-    assert!(app.get_route(&Uri::from_static("/users/1/")).is_some());
 }

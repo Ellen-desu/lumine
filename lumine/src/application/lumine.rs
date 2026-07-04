@@ -10,13 +10,12 @@ use crate::{
         states::{Building, Ready},
         timeouts::Timeouts,
     },
-    internal::connection,
+    internal::{connection, parser},
     middleware::Middleware,
     request::{Request, params::Params},
     response::into_response::IntoResponse,
-    routing::{path::Path, route::Route, route_service::RouteService},
+    routing::{route::Route, route_service::RouteService},
 };
-use http::Uri;
 use std::{marker::PhantomData, sync::Arc};
 use tokio::net::TcpListener;
 
@@ -56,7 +55,7 @@ impl Lumine {
             timeouts: Timeouts::default(),
 
             routes: Vec::new(),
-            middlewares: Vec::new(),
+            middlewares: Vec::with_capacity(4),
 
             _state: PhantomData,
         }
@@ -163,17 +162,13 @@ impl Lumine<Building> {
         Fut: Future<Output = R> + Send + 'static,
         R: IntoResponse,
     {
-        if path.len() > self.limits.max_path_size {
-            panic!("Path too long");
-        }
-
-        let path = Path::from(path);
-        if self.routes.iter().any(|r| r.is_duplicated(&path)) {
+        let segments = parser::parse_path(path, &self.limits);
+        if self.routes.iter().any(|r| r.is_duplicated(&segments)) {
             panic!("Conflicting routes");
         }
 
         self.routes.push(Arc::new(Route {
-            path,
+            segments,
             middlewares: Vec::new(),
             run_before_global: false,
             handler,
@@ -193,18 +188,14 @@ impl Lumine<Building> {
         R: IntoResponse + Send + 'static,
         W: Fn(Route<F>) -> Route<F> + Send + Sync + 'static,
     {
-        if path.len() > self.limits.max_path_size {
-            panic!("URI too long");
-        }
-
-        let path = Path::from(path);
-        if self.routes.iter().any(|r| r.is_duplicated(&path)) {
+        let segments = parser::parse_path(path, &self.limits);
+        if self.routes.iter().any(|r| r.is_duplicated(&segments)) {
             panic!("Conflicting routes");
         }
 
         let route = with(Route {
-            path,
-            middlewares: Vec::new(),
+            segments,
+            middlewares: Vec::with_capacity(3),
             run_before_global: false,
             handler,
         });
@@ -232,11 +223,16 @@ impl Lumine<Ready> {
 
     /// Returns the route and parameters that matches the given URI, if one exists.
     #[doc(hidden)]
-    pub fn get_route(&self, uri: &Uri) -> Option<(Arc<dyn RouteService>, Params)> {
-        let path_parts = Path::from(uri.path());
+    pub fn get_route(&self, path: &str) -> Option<(Arc<dyn RouteService>, Params)> {
+        let path = if path == "/" {
+            Vec::new()
+        } else {
+            path.split('/').skip(1).collect::<Vec<&str>>()
+        };
+
         for route in &self.routes {
-            if let Some(params) = route.matches(&path_parts) {
-                return Some((route.clone(), params));
+            if let Some(params) = route.matches(&path) {
+                return Some((Arc::clone(route), params));
             }
         }
 

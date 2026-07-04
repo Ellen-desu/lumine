@@ -4,10 +4,7 @@
 //! extracted from the request path during routing.
 
 use crate::request::Request;
-use std::{
-    collections::HashMap,
-    ops::{Deref, DerefMut},
-};
+use std::ops::{Deref, DerefMut};
 
 /// Represents path parameters extracted from a matched route.
 ///
@@ -66,7 +63,7 @@ use std::{
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[repr(transparent)]
-pub struct Params(HashMap<String, String>);
+pub struct Params(Vec<(&'static str, Box<str>)>);
 
 impl Params {
     /// Retrieves path parameters from the request extensions.
@@ -81,8 +78,19 @@ impl Params {
             .expect("path parameters are always attached")
     }
 
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     pub fn with_capacity(capacity: usize) -> Self {
-        Self(HashMap::with_capacity(capacity))
+        Self(Vec::with_capacity(capacity))
+    }
+
+    pub fn get(&self, key: &str) -> Option<&str> {
+        self.0
+            .iter()
+            .find(|(k, _)| *k == key)
+            .map(|(_, v)| v.as_ref())
     }
 }
 
@@ -93,7 +101,7 @@ impl DerefMut for Params {
 }
 
 impl Deref for Params {
-    type Target = HashMap<String, String>;
+    type Target = Vec<(&'static str, Box<str>)>;
 
     fn deref(&self) -> &Self::Target {
         &self.0

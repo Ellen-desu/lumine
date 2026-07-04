@@ -35,7 +35,6 @@ pub use crate::{
     middleware::{Middleware, Next},
     request::{Params, Query, Request},
     response::{IntoResponse, Response},
-    routing::Path,
     stream::Stream,
 };
 

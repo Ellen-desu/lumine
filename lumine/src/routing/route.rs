@@ -6,17 +6,17 @@
 
 use std::sync::Arc;
 
-use crate::{middleware::Middleware, routing::path::Path};
+use crate::{middleware::Middleware, routing::segment::Segment};
 
 /// A concrete route that matches a path and dispatches to a handler.
-pub struct Route<'a, F> {
-    pub(crate) path: Path<'a>,
+pub struct Route<F> {
+    pub(crate) segments: Vec<Segment>,
     pub(crate) middlewares: Vec<Arc<dyn Middleware>>,
     pub(crate) run_before_global: bool,
     pub(crate) handler: F,
 }
 
-impl<'a, F> Route<'a, F> {
+impl<F> Route<F> {
     /// Adds a new middleware to this specific route.
     pub fn middleware<M: Middleware>(mut self, middleware: M) -> Self {
         self.middlewares.push(Arc::new(middleware));

@@ -1,5 +1,6 @@
 use lumine::{
-    Body, Middleware, Next, Params, Path, Request, Response, routing::route_service::RouteService,
+    prelude::*,
+    routing::{route_service::RouteService, segment::Segment},
 };
 use std::sync::{Arc, Mutex};
 
@@ -7,11 +8,11 @@ struct MockRoute;
 
 #[async_trait::async_trait]
 impl RouteService for MockRoute {
-    fn matches(&self, _: &Path) -> Option<Params> {
+    fn matches(&self, _: &[&str]) -> Option<Params> {
         None
     }
 
-    fn is_duplicated(&self, _: &Path) -> bool {
+    fn is_duplicated(&self, _: &[Segment]) -> bool {
         false
     }
 

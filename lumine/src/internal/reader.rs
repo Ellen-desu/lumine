@@ -26,10 +26,6 @@ pub async fn read_request<R: AsyncRead + Unpin>(
     // Headers
     let mut headers = HeaderMap::with_capacity(16);
     loop {
-        if headers.len() > limits.max_headers_count {
-            return Err(Error::HeadersTooLarge);
-        }
-
         buffer.clear();
         if let Ok(0) = reader.read_line(&mut buffer).await {
             return Ok(None);
@@ -37,6 +33,10 @@ pub async fn read_request<R: AsyncRead + Unpin>(
 
         if buffer.trim().is_empty() {
             break;
+        }
+
+        if headers.len() >= limits.max_headers_count {
+            return Err(Error::HeadersTooLarge);
         }
 
         let (key, value) = parser::parse_header(limits, &buffer)?;

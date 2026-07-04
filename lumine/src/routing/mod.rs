@@ -4,9 +4,9 @@
 //! Routing is responsible for matching incoming request URIs against
 //! registered routes, and dispatching the request to the appropriate handler.
 
-pub mod path;
 pub mod route;
 pub mod route_service;
+pub mod segment;
 
 #[doc(inline)]
-pub use self::{path::Path, route::Route, route_service::RouteService};
+pub use self::{route::Route, route_service::RouteService};

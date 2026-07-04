@@ -10,7 +10,7 @@ use crate::{
     middleware::Middleware,
     request::{Request, params::Params},
     response::{Response, into_response::IntoResponse},
-    routing::{path::Path, route::Route},
+    routing::{route::Route, segment::Segment},
 };
 
 /// Defines the behavior of a single route within the routing system.
@@ -77,14 +77,14 @@ pub trait RouteService: Send + Sync {
     ///
     /// This method performs pure matching logic and does not
     /// invoke the route handler.
-    fn matches(&self, path: &Path) -> Option<Params>;
+    fn matches(&self, path_parts: &[&str]) -> Option<Params>;
 
     /// Determines whether this route conflicts with another route
     /// using the given path pattern.
     ///
     /// This is primarily used during route registration to prevent
     /// ambiguous routes that would match the same request paths.
-    fn is_duplicated(&self, path: &Path) -> bool;
+    fn is_duplicated(&self, segments: &[Segment]) -> bool;
 
     /// Returns the middleware configured specifically for this route.
     ///
@@ -109,28 +109,41 @@ pub trait RouteService: Send + Sync {
 }
 
 #[async_trait::async_trait]
-impl<'a, F, Fut, R> RouteService for Route<'a, F>
+impl<F, Fut, R> RouteService for Route<F>
 where
     F: Fn(Request) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = R> + Send + 'static,
     R: IntoResponse,
 {
-    fn matches(&self, path: &Path) -> Option<Params> {
-        if path.len() != self.path.len() {
-            None
-        } else {
-            let mut params = Params::with_capacity(4);
-
-            for (route_part, path_parts) in self.path.iter().zip(path.as_ref()) {
-                if let Some(param_name) = route_part.strip_prefix(':') {
-                    params.insert(param_name.to_owned(), (*path_parts).into());
-                } else if route_part != path_parts {
-                    return None;
-                }
-            }
-
-            Some(params)
+    fn matches(&self, path_parts: &[&str]) -> Option<Params> {
+        let wildcard = self.segments.ends_with(&[Segment::Wildcard]);
+        if (!wildcard && path_parts.len() != self.segments.len())
+            || (wildcard && path_parts.len() < self.segments.len())
+        {
+            return None;
         }
+
+        let mut params = Params::with_capacity(4);
+
+        for (segment, part) in self.segments.iter().zip(path_parts) {
+            match segment {
+                Segment::Static(s) => {
+                    if s != part {
+                        return None;
+                    }
+                }
+                Segment::Param(param_name) => {
+                    params.push((param_name, part.to_string().into_boxed_str()));
+                }
+                Segment::Wildcard => break,
+            }
+        }
+
+        Some(if params.is_empty() {
+            Params::new()
+        } else {
+            params
+        })
     }
     fn middlewares(&self) -> &[Arc<dyn Middleware>] {
         &self.middlewares
@@ -138,8 +151,17 @@ where
     fn run_before_global(&self) -> bool {
         self.run_before_global
     }
-    fn is_duplicated(&self, path: &Path) -> bool {
-        *self.path == **path
+    fn is_duplicated(&self, segments: &[Segment]) -> bool {
+        self.segments.len() == segments.len()
+            && self
+                .segments
+                .iter()
+                .zip(segments)
+                .all(|(a, b)| match (a, b) {
+                    (Segment::Static(x), Segment::Static(y)) => x == y,
+                    (Segment::Param(_), Segment::Param(_)) => true,
+                    _ => a == &Segment::Wildcard || b == &Segment::Wildcard,
+                })
     }
     async fn call(&self, request: Request) -> Response {
         (self.handler)(request).await.into_response()

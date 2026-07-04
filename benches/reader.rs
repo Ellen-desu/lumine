@@ -29,8 +29,9 @@ fn make_get_request(headers: usize) -> Vec<u8> {
     let mut req = String::new();
 
     req.push_str("GET /search?q=rust HTTP/1.1\r\n");
+    req.push_str("Host: localhost\r\n");
 
-    for i in 0..headers {
+    for i in 0..(headers - 1) {
         req.push_str(&format!(
             "X-Custom-Header-{}: some-long-header-value-{}\r\n",
             i, i

@@ -1,7 +1,7 @@
 use criterion::{Criterion, criterion_group, criterion_main};
 use lumine::{application::states::Ready, prelude::*};
 use rand::seq::SliceRandom;
-use std::{hint::black_box, str::FromStr};
+use std::hint::black_box;
 
 fn build_app() -> Lumine<Ready> {
     let mut builder = Lumine::builder();
@@ -20,7 +20,7 @@ fn build_app() -> Lumine<Ready> {
     builder.build()
 }
 
-fn generate_routes(n: usize) -> Vec<Uri> {
+fn generate_routes(n: usize) -> Vec<String> {
     let mut routes = Vec::with_capacity(n);
 
     for i in 0..n {
@@ -32,7 +32,7 @@ fn generate_routes(n: usize) -> Vec<Uri> {
             _ => "/nothing".into(),
         };
 
-        routes.push(Uri::from_str(&path).unwrap());
+        routes.push(path);
     }
 
     routes

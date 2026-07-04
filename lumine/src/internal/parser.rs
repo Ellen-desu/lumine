@@ -3,7 +3,9 @@
 //! This module provides functionality for parsing HTTP request lines, and headers.
 //! For body, we just read the raw bytes and pass them along.
 
-use crate::{application::limits::Limits, error::Error, request::query::Query};
+use crate::{
+    application::limits::Limits, error::Error, request::query::Query, routing::segment::Segment,
+};
 use http::{HeaderName, HeaderValue, Method, Uri, Version};
 use std::str::FromStr;
 
@@ -79,4 +81,58 @@ pub fn parse_header(limits: Limits, header: &str) -> Result<(HeaderName, HeaderV
     let header_value = HeaderValue::from_str(value.trim())?;
 
     Ok((header_name, header_value))
+}
+
+#[allow(clippy::panic)]
+pub fn parse_path(path: &'static str, limits: &Limits) -> Vec<Segment> {
+    if path.len() > limits.max_path_size {
+        panic!("Path too large: {} > {}", path.len(), limits.max_path_size);
+    }
+
+    if path == "/" {
+        return Vec::new();
+    }
+
+    if !path.starts_with('/') || path.ends_with('/') {
+        panic!("Path must start with a slash and not end with a slash");
+    }
+
+    let mut segments = Vec::with_capacity(limits.max_segments_count);
+
+    path.split('/').skip(1).for_each(|s| {
+        if segments.len() >= limits.max_segments_count {
+            panic!("Path segment count exceeds limit");
+        }
+
+        match s {
+            ":" => {
+                panic!("Path parameter must be followed by a name");
+            }
+            _ => {
+                if segments.last() == Some(&Segment::Wildcard) {
+                    panic!("Wildcard segment must be the last segment");
+                }
+
+                if s.is_empty() {
+                    panic!("Path segment must not be empty");
+                }
+
+                if segments.contains(&Segment::Param(s.trim_start_matches(':'))) {
+                    panic!("Path parameter must be unique");
+                }
+
+                if s.len() > limits.max_segment_size {
+                    panic!(
+                        "Path segment too large: {} > {}",
+                        s.len(),
+                        limits.max_segment_size
+                    );
+                }
+            }
+        }
+
+        segments.push(Segment::from(s));
+    });
+
+    segments
 }

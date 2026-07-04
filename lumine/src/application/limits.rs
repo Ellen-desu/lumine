@@ -18,6 +18,10 @@ pub struct Limits {
     pub max_headers_size: usize,
     /// Maximum number of request headers allowed.
     pub max_headers_count: usize,
+    /// Maximum size of a path segment.
+    pub max_segment_size: usize,
+    /// Maximum number of path segments allowed.
+    pub max_segments_count: usize,
     /// Maximum size of the request body in bytes.
     pub max_body_size: usize,
 }
@@ -32,6 +36,9 @@ impl Default for Limits {
 
             max_headers_size: 32 * 1024, // 32 KB
             max_headers_count: 100,
+
+            max_segment_size: 256, // 256 bytes
+            max_segments_count: 100,
 
             max_body_size: 10 * 1024 * 1024, // 10 MB
         }
