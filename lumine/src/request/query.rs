@@ -4,10 +4,7 @@
 //! and storage of query parameters from the request URI.
 
 use crate::request::Request;
-use std::{
-    collections::HashMap,
-    ops::{Deref, DerefMut},
-};
+use std::ops::{Deref, DerefMut};
 
 /// Represents query parameters extracted from the request URI.
 ///
@@ -70,18 +67,15 @@ use std::{
 /// fn search(req: Request) -> impl IntoResponse {
 ///     let query = Query::from_request(&req);
 ///
-///     if let Some(tags) = query.get("tag") {
-///         for tag in tags {
-///             println!("tag = {}", tag);
-///         }
-///     }
+///     let search = query.get("search");
+///     assert_eq!(search, Some("foobar"));
 ///
 ///     "ok"
 /// }
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[repr(transparent)]
-pub struct Query(HashMap<String, Vec<String>>);
+pub struct Query(Vec<(Box<str>, Vec<Box<str>>)>);
 
 impl Query {
     /// Retrieves query parameters from the request extensions.
@@ -97,12 +91,34 @@ impl Query {
     }
 
     pub fn with_capacity(capacity: usize) -> Self {
-        Self(HashMap::with_capacity(capacity))
+        Self(Vec::with_capacity(capacity))
+    }
+
+    pub fn insert(&mut self, key: Box<str>, value: Box<str>) {
+        if let Some(values) = self.0.iter_mut().find(|(k, _)| *k == key) {
+            values.1.push(value);
+        } else {
+            self.0.push((key, vec![value]));
+        }
+    }
+
+    pub fn get(&self, key: &str) -> Option<&str> {
+        self.0
+            .iter()
+            .find(|(k, _)| k.as_ref() == key)
+            .map(|(_, v)| v[0].as_ref())
+    }
+
+    pub fn get_all(&self, key: &str) -> Option<impl Iterator<Item = &str>> {
+        self.0
+            .iter()
+            .find(|(k, _)| k.as_ref() == key)
+            .map(|(_, v)| v.iter().map(|v| v.as_ref()))
     }
 }
 
 impl Deref for Query {
-    type Target = HashMap<String, Vec<String>>;
+    type Target = Vec<(Box<str>, Vec<Box<str>>)>;
 
     fn deref(&self) -> &Self::Target {
         &self.0

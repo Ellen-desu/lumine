@@ -68,7 +68,8 @@ async fn request_with_query() {
         .unwrap();
 
     let query = Query::from_request(&request);
-    assert_eq!(query.get("foo"), Some(&Vec::from([String::from("bar")])));
+    assert_eq!(query.get("foo"), Some("bar"));
+    assert!(query.get_all("foo").unwrap().collect::<Vec<_>>() == vec!["bar"]);
 }
 
 #[tokio::test]

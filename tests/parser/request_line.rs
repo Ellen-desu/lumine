@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use lumine::{internal::parser::parse_request_line, prelude::*};
 
 #[test]
@@ -28,13 +26,19 @@ fn multiple_queries() {
 
     assert_eq!(
         *query,
-        HashMap::from([
-            ("a".to_string(), vec!["test".to_string()]),
+        vec![
             (
-                "q".to_string(),
-                vec!["test2".to_string(), "test1".to_string()]
+                "a".to_string().into_boxed_str(),
+                vec!["test".to_string().into_boxed_str()]
+            ),
+            (
+                "q".to_string().into_boxed_str(),
+                vec![
+                    "test2".to_string().into_boxed_str(),
+                    "test1".to_string().into_boxed_str()
+                ]
             )
-        ])
+        ]
     );
 }
 

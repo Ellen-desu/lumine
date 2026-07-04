@@ -158,8 +158,8 @@ async fn search_handler(req: Request) -> impl IntoResponse {
     let query_params = Query::from_request(&req);
 
     // Get 'q' parameter (search query)
-    let search_term = match query_params.get("q") {
-        Some(terms) if !terms.is_empty() => terms[0].clone(),
+    let query = match query_params.get("q") {
+        Some(terms) if !terms.is_empty() => terms,
         _ => {
             return (StatusCode::BAD_REQUEST, "Missing 'q' parameter".to_string());
         }
@@ -167,18 +167,18 @@ async fn search_handler(req: Request) -> impl IntoResponse {
 
     // Get 'limit' parameter with default
     let limit = match query_params.get("limit") {
-        Some(limits) if !limits.is_empty() => limits[0].parse::<usize>().unwrap_or(10),
+        Some(limit) if !limit.is_empty() => limit.parse::<usize>().unwrap_or(10),
         _ => 10, // Default limit
     };
 
     // Simulate search results
     let results = SearchResult {
-        query: search_term.clone(),
+        query: query.to_string(),
         limit,
         results: vec![
-            format!("Result 1 for '{}'", search_term),
-            format!("Result 2 for '{}'", search_term),
-            format!("Result 3 for '{}'", search_term),
+            format!("Result 1 for '{}'", query),
+            format!("Result 2 for '{}'", query),
+            format!("Result 3 for '{}'", query),
         ],
     };
 
@@ -242,16 +242,12 @@ async fn list_posts_handler(req: Request) -> impl IntoResponse {
     let query_params = Query::from_request(&req);
 
     // Extract sort parameter (default: "recent")
-    let sort = query_params
-        .get("sort")
-        .and_then(|v| v.first().cloned())
-        .unwrap_or_else(|| "recent".to_string());
+    let sort = query_params.get("sort").unwrap_or("recent");
 
     // Extract limit parameter (default: 10)
     let limit = query_params
         .get("limit")
-        .and_then(|v| v.first().cloned())
-        .and_then(|l| l.parse::<u32>().ok())
+        .and_then(|v| v.parse::<u32>().ok())
         .unwrap_or(10);
 
     // Build response showing extracted parameters

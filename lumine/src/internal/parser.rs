@@ -59,7 +59,7 @@ pub fn parse_request_line(
                 return Err(Error::QueryTooLarge);
             }
 
-            query.entry(key).or_default().push(value);
+            query.insert(key.into_boxed_str(), value.into_boxed_str());
         }
     }
 
