@@ -30,13 +30,6 @@ use std::ops::{Deref, DerefMut};
 /// As a result, [`Params`] is only available inside handlers and
 /// only when the matched route defines path parameters.
 ///
-/// # String-only values
-///
-/// All path parameter values are stored as `String`.
-/// Routing operates purely on textual data, and converting values
-/// into concrete types (e.g. `u32`) is intentionally left to
-/// application logic.
-///
 /// # Accessing Params
 ///
 /// Use [`Params::from_request`] to retrieve parameters from a request.

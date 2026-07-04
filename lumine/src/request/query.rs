@@ -12,7 +12,7 @@ use std::ops::{Deref, DerefMut};
 ///
 /// Unlike path parameters, query parameters may appear multiple
 /// times with the same key. To preserve this information, each key
-/// maps to a `Vec<String>`.
+/// maps to a `Vec<Box<str>>`.
 ///
 /// # Example
 ///
@@ -45,12 +45,6 @@ use std::ops::{Deref, DerefMut};
 /// 5. The handler function is invoked with the populated [`Request`].
 ///
 /// As a result, [`Query`] is only available inside handlers.
-///
-/// # String-only values
-///
-/// All query parameter values are stored as `String`.
-/// Converting values into concrete types (e.g. `bool`, `u32`)
-/// is the responsibility of application logic.
 ///
 /// # Accessing Query
 ///
