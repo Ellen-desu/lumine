@@ -11,10 +11,10 @@ use crate::{middleware::Middleware, routing::segment::Segment};
 /// A concrete route that matches a path and dispatches to a handler.
 #[doc(hidden)]
 pub struct Route<F> {
-    pub(crate) segments: Vec<Segment>,
-    pub(crate) middlewares: Vec<Arc<dyn Middleware>>,
-    pub(crate) run_before_global: bool,
-    pub(crate) handler: F,
+    pub segments: Vec<Segment>,
+    pub middlewares: Vec<Arc<dyn Middleware>>,
+    pub run_before_global: bool,
+    pub handler: F,
 }
 
 impl<F> Route<F> {

@@ -1,33 +1,5 @@
-use lumine::{
-    prelude::*,
-    routing::{route_service::RouteService, segment::Segment},
-};
+use lumine::{prelude::*, routing::route::Route};
 use std::sync::{Arc, Mutex};
-
-struct MockRoute;
-
-#[async_trait::async_trait]
-impl RouteService for MockRoute {
-    fn matches(&self, _: &[&str]) -> Option<Params> {
-        None
-    }
-
-    fn is_duplicated(&self, _: &[Segment]) -> bool {
-        false
-    }
-
-    fn middlewares(&self) -> &[Arc<dyn Middleware>] {
-        &[]
-    }
-
-    fn run_before_global(&self) -> bool {
-        false
-    }
-
-    async fn call(&self, _: Request) -> Response {
-        http::Response::new(Body::Empty)
-    }
-}
 
 struct AppendMiddleware {
     text: &'static str,
@@ -45,6 +17,13 @@ impl Middleware for AppendMiddleware {
 
 #[tokio::test]
 async fn calling_middleware_and_ordering() {
+    let route = Route {
+        segments: vec![],
+        middlewares: vec![],
+        run_before_global: false,
+        handler: async |_| (),
+    };
+
     let output = Arc::new(Mutex::new(Vec::new()));
 
     let mw1 = Arc::new(AppendMiddleware {
@@ -59,7 +38,7 @@ async fn calling_middleware_and_ordering() {
 
     let middlewares: Vec<Arc<dyn Middleware>> = vec![mw1, mw2];
 
-    let next = Next::new(middlewares, Arc::new(MockRoute));
+    let next = Next::new(middlewares, Arc::new(route));
     let request = http::Request::new(Vec::new());
 
     next.run(request).await;
