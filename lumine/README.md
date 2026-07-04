@@ -37,12 +37,12 @@ Lumine aims to provide:
 
 ## Minimal Usage
 
-```rust,ignore
+```rust,no_run
 use lumine::prelude::*;
 use tokio::net::TcpListener;
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> std::io::Result<()> {
     let app = Lumine::builder()
         .route("/", async |_| "Hello, World!")
         .build();
