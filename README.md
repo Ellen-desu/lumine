@@ -37,7 +37,7 @@ Lumine aims to provide:
 
 ## Minimal Usage
 
-```rust.no_run
+```rust,no_run
 use lumine::prelude::*;
 use tokio::net::TcpListener;
 
