@@ -14,8 +14,8 @@ use std::str::FromStr;
 /// This function extracts the method, URI, HTTP version, and query parameters
 /// from the first line of the HTTP request.
 pub fn parse_request_line(
-    limits: Limits,
     line: &str,
+    limits: &Limits,
 ) -> Result<(Method, Uri, Version, Query), Error> {
     let mut parts = line.split_whitespace();
 
@@ -70,7 +70,7 @@ pub fn parse_request_line(
 ///
 /// This function splits the line into key-value pair and returns a `HeaderName`
 /// and `HeaderValue`.
-pub fn parse_header(limits: Limits, header: &str) -> Result<(HeaderName, HeaderValue), Error> {
+pub fn parse_header(header: &str, limits: &Limits) -> Result<(HeaderName, HeaderValue), Error> {
     if header.len() > limits.max_headers_size {
         return Err(Error::HeadersTooLarge);
     }

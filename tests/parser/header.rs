@@ -3,7 +3,7 @@ use lumine::{internal::parser::parse_header, prelude::*};
 #[test]
 fn normal_header() {
     let header = "Content-Type: application/json";
-    let (key, value) = parse_header(Limits::default(), header).unwrap();
+    let (key, value) = parse_header(header, &Limits::default()).unwrap();
 
     assert_eq!(key, "Content-Type");
     assert_eq!(value, "application/json");
@@ -12,7 +12,7 @@ fn normal_header() {
 #[test]
 fn custom_header() {
     let header = "X-Custom-Header: any";
-    let (key, value) = parse_header(Limits::default(), header).unwrap();
+    let (key, value) = parse_header(header, &Limits::default()).unwrap();
 
     assert_eq!(key, "X-Custom-Header");
     assert_eq!(value, "any");
@@ -21,7 +21,7 @@ fn custom_header() {
 #[test]
 fn no_whitespace() {
     let header = "Content-Type:application/json";
-    let (key, value) = parse_header(Limits::default(), header).unwrap();
+    let (key, value) = parse_header(header, &Limits::default()).unwrap();
 
     assert_eq!(key, "Content-Type");
     assert_eq!(value, "application/json");
@@ -30,7 +30,7 @@ fn no_whitespace() {
 #[test]
 fn more_whitespace() {
     let header = "Content-Type:     application/json";
-    let (key, value) = parse_header(Limits::default(), header).unwrap();
+    let (key, value) = parse_header(header, &Limits::default()).unwrap();
 
     assert_eq!(key, "Content-Type");
     assert_eq!(value, "application/json");
@@ -39,13 +39,13 @@ fn more_whitespace() {
 #[test]
 fn whitespace_before_colon() {
     let header = "Content-Type : application/json";
-    assert!(parse_header(Limits::default(), header).is_err());
+    assert!(parse_header(header, &Limits::default()).is_err());
 }
 
 #[test]
 fn empty_value() {
     let header = "Content-Type:";
-    let (key, value) = parse_header(Limits::default(), header).unwrap();
+    let (key, value) = parse_header(header, &Limits::default()).unwrap();
 
     assert_eq!(key, "Content-Type");
     assert_eq!(value, "");
@@ -54,5 +54,5 @@ fn empty_value() {
 #[test]
 fn overflow_header() {
     let kv = "a".repeat(16 * 1024); // 16 KB
-    assert!(parse_header(Limits::default(), &format!("{kv}: {kv}")).is_err());
+    assert!(parse_header(&format!("{kv}: {kv}"), &Limits::default()).is_err());
 }

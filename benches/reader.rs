@@ -54,7 +54,7 @@ fn benchmark(c: &mut Criterion) {
                 let cursor = Cursor::new(&req);
                 let mut reader = BufReader::new(cursor);
 
-                let req = read_request(&mut reader, Limits::default()).await.unwrap();
+                let req = read_request(&mut reader, &Limits::default()).await.unwrap();
 
                 black_box(req);
             });
@@ -69,7 +69,7 @@ fn benchmark(c: &mut Criterion) {
                 let cursor = Cursor::new(&req);
                 let mut reader = BufReader::new(cursor);
 
-                let parsed = read_request(&mut reader, Limits::default()).await.unwrap();
+                let parsed = read_request(&mut reader, &Limits::default()).await.unwrap();
 
                 black_box(parsed);
             });

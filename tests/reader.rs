@@ -8,7 +8,7 @@ async fn get_request() {
                  \r\n";
     let mut reader = BufReader::new(&raw[..]);
 
-    let (request, _) = read_request(&mut reader, Limits::default())
+    let (request, _) = read_request(&mut reader, &Limits::default())
         .await
         .unwrap()
         .unwrap();
@@ -34,7 +34,7 @@ async fn post_request_with_body() {
         Hello, World!";
     let mut reader = BufReader::new(&raw[..]);
 
-    let (request, _) = read_request(&mut reader, Limits::default())
+    let (request, _) = read_request(&mut reader, &Limits::default())
         .await
         .unwrap()
         .unwrap();
@@ -62,7 +62,7 @@ async fn request_with_query() {
                  \r\n";
     let mut reader = BufReader::new(&raw[..]);
 
-    let (request, _) = read_request(&mut reader, Limits::default())
+    let (request, _) = read_request(&mut reader, &Limits::default())
         .await
         .unwrap()
         .unwrap();
@@ -75,7 +75,7 @@ async fn request_with_query() {
 async fn empty_stream() {
     let raw = b"";
     let mut reader = BufReader::new(&raw[..]);
-    let request = read_request(&mut reader, Limits::default()).await.unwrap();
+    let request = read_request(&mut reader, &Limits::default()).await.unwrap();
     assert!(request.is_none());
 }
 
@@ -88,7 +88,7 @@ async fn overflow_headers_count() {
     let mut reader = BufReader::new(&raw[..]);
     let result = read_request(
         &mut reader,
-        Limits {
+        &Limits {
             max_headers_count: 1,
             ..Default::default()
         },
@@ -105,7 +105,7 @@ async fn overflow_body() {
     let mut reader = BufReader::new(&raw[..]);
     let result = read_request(
         &mut reader,
-        Limits {
+        &Limits {
             max_body_size: 1,
             ..Default::default()
         },

@@ -5,7 +5,7 @@ use lumine::{internal::parser::parse_request_line, prelude::*};
 #[test]
 fn normal_line() {
     let line = "GET / HTTP/1.1";
-    let result = parse_request_line(Limits::default(), line);
+    let result = parse_request_line(line, &Limits::default());
     assert!(result.is_ok());
 
     let (method, uri, version, query) = result.unwrap();
@@ -18,7 +18,7 @@ fn normal_line() {
 #[test]
 fn multiple_queries() {
     let line = "GET /?a=test&q=test2&q=test1 HTTP/1.1";
-    let result = parse_request_line(Limits::default(), line);
+    let result = parse_request_line(line, &Limits::default());
     assert!(result.is_ok());
 
     let (method, uri, version, query) = result.unwrap();
@@ -41,14 +41,14 @@ fn multiple_queries() {
 #[test]
 fn unsupported_version() {
     let line = "GET / HTTP/2.0";
-    let result = parse_request_line(Limits::default(), line);
+    let result = parse_request_line(line, &Limits::default());
     assert!(result.is_err());
 }
 
 #[test]
 fn additional_keyword() {
     let line = "GET / HTTP/1.1 ERR";
-    let result = parse_request_line(Limits::default(), line);
+    let result = parse_request_line(line, &Limits::default());
     assert!(result.is_err());
 }
 
@@ -56,11 +56,11 @@ fn additional_keyword() {
 fn overflow_path_size() {
     let line = "GET /users HTTP/1.1";
     let result = parse_request_line(
-        Limits {
+        line,
+        &Limits {
             max_path_size: 5,
             ..Default::default()
         },
-        line,
     );
     assert!(result.is_err());
 }
@@ -69,11 +69,11 @@ fn overflow_path_size() {
 fn overflow_query_size() {
     let line = "GET /?a=b HTTP/1.1";
     let result = parse_request_line(
-        Limits {
+        line,
+        &Limits {
             max_query_size: 2,
             ..Default::default()
         },
-        line,
     );
     assert!(result.is_err());
 }
@@ -82,11 +82,11 @@ fn overflow_query_size() {
 fn overflow_query_keys_count() {
     let line = "GET /?a=a&b=b HTTP/1.1";
     let result = parse_request_line(
-        Limits {
+        line,
+        &Limits {
             max_query_count: 1,
             ..Default::default()
         },
-        line,
     );
     assert!(result.is_err());
 }

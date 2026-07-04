@@ -11,7 +11,7 @@ use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncReadExt, BufReader};
 /// and constructs a [`Request`] object.
 pub async fn read_request<R: AsyncRead + Unpin>(
     stream: &mut R,
-    limits: Limits,
+    limits: &Limits,
 ) -> Result<Option<(Request, Framing)>, Error> {
     let mut reader = BufReader::new(stream);
     let mut buffer = String::new();
@@ -21,7 +21,7 @@ pub async fn read_request<R: AsyncRead + Unpin>(
         return Ok(None);
     }
 
-    let (method, uri, version, query) = parser::parse_request_line(limits, &buffer)?;
+    let (method, uri, version, query) = parser::parse_request_line(&buffer, limits)?;
 
     // Headers
     let mut headers = HeaderMap::with_capacity(16);
@@ -39,7 +39,7 @@ pub async fn read_request<R: AsyncRead + Unpin>(
             return Err(Error::HeadersTooLarge);
         }
 
-        let (key, value) = parser::parse_header(limits, &buffer)?;
+        let (key, value) = parser::parse_header(&buffer, limits)?;
 
         headers.append(key, value);
     }

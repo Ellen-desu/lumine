@@ -78,7 +78,7 @@ fn benchmark(c: &mut Criterion) {
                 shuffled.shuffle(&mut rng);
 
                 for line in shuffled.iter() {
-                    black_box(parser::parse_request_line(Limits::default(), line).unwrap());
+                    black_box(parser::parse_request_line(line, &Limits::default()).unwrap());
                 }
             });
         });

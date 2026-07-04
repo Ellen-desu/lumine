@@ -25,7 +25,7 @@ pub async fn handle_connection<Rw: AsyncRead + AsyncWrite + Unpin>(
     loop {
         let request_result = match tokio::time::timeout(
             timeouts.request_read,
-            reader::read_request(&mut stream, app.limits),
+            reader::read_request(&mut stream, &app.limits),
         )
         .await
         {
