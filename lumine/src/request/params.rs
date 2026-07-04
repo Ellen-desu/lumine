@@ -3,7 +3,6 @@
 //! This module provides the [`Params`] struct, which holds dynamic segments
 //! extracted from the request path during routing.
 
-use crate::request::Request;
 use std::ops::{Deref, DerefMut};
 
 /// Represents path parameters extracted from a matched route.
@@ -45,7 +44,7 @@ use std::ops::{Deref, DerefMut};
 /// # Example
 ///
 /// ```rust
-/// use lumine::{Request, IntoResponse, Params};
+/// use lumine::{Request, IntoResponse, FromRequest, Params};
 ///
 /// fn user(req: Request) -> impl IntoResponse {
 ///     let params = Params::from_request(&req);
@@ -64,14 +63,6 @@ use std::ops::{Deref, DerefMut};
 pub struct Params(Vec<(&'static str, Box<str>)>);
 
 impl Params {
-    /// Retrieves path parameters from the request extensions.
-    pub fn from_request(request: &Request) -> &Self {
-        request
-            .extensions()
-            .get::<Self>()
-            .expect("path parameters are always attached")
-    }
-
     /// Creates a new `Params`.
     pub fn new() -> Self {
         Self(Vec::new())

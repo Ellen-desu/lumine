@@ -3,7 +3,6 @@
 //! This module provides the [`Query`] struct, which handles the parsing
 //! and storage of query parameters from the request URI.
 
-use crate::request::Request;
 use std::ops::{Deref, DerefMut};
 
 /// Represents query parameters extracted from the request URI.
@@ -60,7 +59,7 @@ use std::ops::{Deref, DerefMut};
 /// # Example
 ///
 /// ```rust
-/// use lumine::{Request, IntoResponse, Query};
+/// use lumine::{Request, IntoResponse, FromRequest, Query};
 ///
 /// fn search(req: Request) -> impl IntoResponse {
 ///     let query = Query::from_request(&req);
@@ -76,14 +75,6 @@ use std::ops::{Deref, DerefMut};
 pub struct Query(Vec<(Box<str>, Vec<Box<str>>)>);
 
 impl Query {
-    /// Retrieves query parameters from the request extensions.
-    pub fn from_request(request: &Request) -> &Self {
-        request
-            .extensions()
-            .get::<Self>()
-            .expect("query parameters are always attached")
-    }
-
     /// Creates a new `Query`.
     pub fn new() -> Self {
         Self(Vec::new())

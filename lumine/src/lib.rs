@@ -30,7 +30,7 @@ pub use crate::{
     body::{Body, IntoBody},
     error::Error,
     middleware::{Middleware, Next},
-    request::{Params, Query, Request},
+    request::{FromRequest, Params, Query, Request},
     response::{IntoResponse, Response},
     stream::Stream,
 };

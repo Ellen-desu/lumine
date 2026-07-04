@@ -4,11 +4,12 @@
 //! parsing and accessing request components like query parameters
 //! and path parameters.
 
+pub mod from_request;
 pub mod params;
 pub mod query;
 
 #[doc(inline)]
-pub use self::{params::Params, query::Query};
+pub use self::{from_request::FromRequest, params::Params, query::Query};
 
 /// The request type used throughout Lumine.
 ///
