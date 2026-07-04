@@ -10,7 +10,7 @@ use crate::{
         states::{Building, Ready},
         timeouts::Timeouts,
     },
-    internal::{connection, parser},
+    internal::{connection, parser, validator},
     middleware::Middleware,
     request::{Request, params::Params},
     response::into_response::IntoResponse,
@@ -163,9 +163,7 @@ impl Lumine<Building> {
         R: IntoResponse,
     {
         let segments = parser::parse_path(path, &self.limits);
-        if self.routes.iter().any(|r| r.is_duplicated(&segments)) {
-            panic!("Conflicting routes");
-        }
+        validator::check_route_duplicates(&self.routes, &segments);
 
         self.routes.push(Arc::new(Route {
             segments,
@@ -189,9 +187,7 @@ impl Lumine<Building> {
         W: Fn(Route<F>) -> Route<F> + Send + Sync + 'static,
     {
         let segments = parser::parse_path(path, &self.limits);
-        if self.routes.iter().any(|r| r.is_duplicated(&segments)) {
-            panic!("Conflicting routes");
-        }
+        validator::check_route_duplicates(&self.routes, &segments);
 
         let route = with(Route {
             segments,

@@ -1,8 +1,10 @@
 use crate::{
     error::Error,
     internal::framing::{Connection, Framing},
+    routing::{route_service::RouteService, segment::Segment},
 };
 use http::{HeaderMap, header};
+use std::sync::Arc;
 
 /// Validates the headers of an HTTP request and returns a [`Framing`] instance.
 pub fn validate_headers(headers: &HeaderMap) -> Result<Framing, Error> {
@@ -66,4 +68,11 @@ pub fn validate_headers(headers: &HeaderMap) -> Result<Framing, Error> {
         content_length,
         connection: connection.unwrap_or(Connection::KeepAlive),
     })
+}
+
+#[doc(hidden)]
+pub fn check_route_duplicates(routes: &[Arc<dyn RouteService>], segments: &[Segment]) {
+    if routes.iter().any(|r| r.is_duplicated(segments)) {
+        panic!("Conflicting routes");
+    }
 }
