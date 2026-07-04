@@ -6,8 +6,6 @@
 
 pub mod into_response;
 
-pub(crate) mod default_headers;
-
 #[doc(inline)]
 pub use self::into_response::IntoResponse;
 

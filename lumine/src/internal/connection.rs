@@ -5,8 +5,8 @@
 
 use crate::{
     application::{lumine::Lumine, states::Ready},
-    internal::{dispatch, reader, writer},
-    response::{default_headers::DefaultHeaders, into_response::IntoResponse},
+    internal::{dispatch, headers, reader, writer},
+    response::into_response::IntoResponse,
 };
 use std::sync::Arc;
 use tokio::io::{AsyncRead, AsyncWrite};
@@ -44,16 +44,18 @@ pub async fn handle_connection<Rw: AsyncRead + AsyncWrite + Unpin>(
             }
         };
 
-        let response = dispatch::dispatch_request(request, &app).await;
-        let should_close = framing.connection.is_close() || response.status().is_server_error();
+        let (mut parts, body) = dispatch::dispatch_request(request, &app).await.into_parts();
 
-        if writer::write_response(
-            response.set_default_headers(should_close),
-            &mut stream,
-            timeouts,
-        )
-        .await
-        .is_err()
+        let should_close = framing.connection.is_close()
+            || parts.status.is_server_error()
+            || parts.status.is_client_error();
+
+        headers::set_headers(&mut parts.headers, &body, should_close);
+
+        let response = http::Response::from_parts(parts, body);
+        if writer::write_response(response, &mut stream, timeouts)
+            .await
+            .is_err()
         {
             break;
         }
