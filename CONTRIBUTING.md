@@ -10,6 +10,7 @@ To maintain the quality and safety of the codebase, please adhere to the followi
 
 ### 1. Safety First
 * **No `unsafe`**: Lumine aims to be 100% safe Rust. Avoid `unsafe` blocks unless there's an absolute, performance-critical necessity that has been thoroughly discussed.
+* **`panic!` is allowed only at startup**: Panics are used to indicate unrecoverable errors at startup.
 * **Avoid `.unwrap()`**: It panics with no context. Only use in tests, examples, or quick prototypes.
 * **`.expect()` is allowed when you're certain it won't panic**: Include a clear reason in the message, e.g. `expect("PORT must be set")`.
 
