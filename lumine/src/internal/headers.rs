@@ -1,3 +1,6 @@
+#[cfg(feature = "date")]
+use std::time::SystemTime;
+
 use http::{HeaderMap, HeaderValue, header};
 
 use crate::body::{Body, DynBody};
@@ -6,11 +9,7 @@ pub fn set_headers(headers: &mut HeaderMap, body: &DynBody, should_close: bool) 
     #[cfg(feature = "date")]
     headers.insert(
         header::DATE,
-        time::OffsetDateTime::now_utc()
-            .format(time::macros::format_description!(
-                "[weekday repr:short], [day] [month repr:short] [year] [hour]:[minute]:[second] GMT"
-            ))
-            .expect("valid HTTP format")
+        httpdate::fmt_http_date(SystemTime::now())
             .parse()
             .expect("Parse to header should always work"),
     );
@@ -40,9 +39,9 @@ pub fn set_headers(headers: &mut HeaderMap, body: &DynBody, should_close: bool) 
             }
 
             if let Some(hints) = stream.headers_hint() {
-                for (key, val) in hints {
-                    headers.entry(key.clone()).or_insert(val.clone());
-                }
+                hints.iter().for_each(|(key, val)| {
+                    headers.entry(key).or_insert(val.clone());
+                });
             }
 
             insert_content_type(headers, "application/octet-stream");
