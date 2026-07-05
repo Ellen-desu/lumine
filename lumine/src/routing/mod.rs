@@ -7,7 +7,7 @@
 #![doc(hidden)]
 
 pub mod route;
-pub mod route_service;
+pub mod route_entry;
 pub mod segment;
 
-pub use self::{route::Route, route_service::RouteService};
+pub use self::{route::Route, route_entry::RouteEntry};

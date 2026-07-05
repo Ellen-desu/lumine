@@ -1,6 +1,6 @@
 //! Route service abstraction.
 //!
-//! This module defines the [`RouteService`] trait, which abstracts the
+//! This module defines the [`RouteEntry`] trait, which abstracts the
 //! behavior of a single route, including matching, middleware execution,
 //! and handler dispatching.
 
@@ -15,7 +15,7 @@ use crate::{
 
 /// Defines the behavior of a single route within the routing system.
 ///
-/// RouteService abstracts how a route:
+/// RouteEntry abstracts how a route:
 ///
 /// - Determines whether it matches a request path
 /// - Detects conflicts with other routes
@@ -30,18 +30,18 @@ use crate::{
 /// During request handling, the router interacts with routes
 /// through this trait in the following order:
 ///
-/// 1. [RouteService::matches] is called to determine whether the route matches
+/// 1. [RouteEntry::matches] is called to determine whether the route matches
 ///    the incoming request path and to extract path parameters.
 /// 2. If a match is found, the router constructs a middleware chain consisting of:
 /// - Application-level middleware
-/// - Route-specific middleware (from [RouteService::middlewares])
+/// - Route-specific middleware (from [RouteEntry::middlewares])
 /// 3. The execution order of the middleware chain is determined by
-///    [RouteService::run_before_global].
+///    [RouteEntry::run_before_global].
 /// 4. The request is passed into the middleware chain via a Next executor.
-/// 5. After all middleware have been executed, [RouteService::call] is invoked
+/// 5. After all middleware have been executed, [RouteEntry::call] is invoked
 ///    as the final step.
 ///
-/// During route registration, [RouteService::is_duplicated] is used to prevent
+/// During route registration, [RouteEntry::is_duplicated] is used to prevent
 /// ambiguous or conflicting route definitions.
 ///
 /// # Middleware execution model
@@ -59,7 +59,7 @@ use crate::{
 ///
 /// # Design
 ///
-/// RouteService intentionally separates:
+/// RouteEntry intentionally separates:
 ///
 /// - Matching logic (path comparison and parameter extraction)
 /// - Middleware configuration (route-specific middleware and ordering)
@@ -68,7 +68,7 @@ use crate::{
 /// This separation keeps routing predictable and makes route implementations
 /// easier to reason about, extend, and refactor.
 #[async_trait::async_trait]
-pub trait RouteService: Send + Sync {
+pub trait RouteEntry: Send + Sync {
     /// Attempts to match the given path segments against this route.
     ///
     /// Returns `Some(Params)` if the path matches, containing any
@@ -109,7 +109,7 @@ pub trait RouteService: Send + Sync {
 }
 
 #[async_trait::async_trait]
-impl<F, Fut, R> RouteService for Route<F>
+impl<F, Fut, R> RouteEntry for Route<F>
 where
     F: Fn(Request) -> Fut + Send + Sync + 'static,
     Fut: Future<Output = R> + Send + 'static,

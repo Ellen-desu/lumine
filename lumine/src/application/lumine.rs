@@ -14,7 +14,7 @@ use crate::{
     middleware::Middleware,
     request::{Request, params::Params},
     response::into_response::IntoResponse,
-    routing::{route::Route, route_service::RouteService},
+    routing::{route::Route, route_entry::RouteEntry},
 };
 use std::{marker::PhantomData, sync::Arc};
 use tokio::net::TcpListener;
@@ -35,7 +35,7 @@ pub struct Lumine<State = Building> {
     pub(crate) timeouts: Timeouts,
 
     // Routes and middlewares
-    pub(crate) routes: Vec<Arc<dyn RouteService>>,
+    pub(crate) routes: Vec<Arc<dyn RouteEntry>>,
     pub(crate) middlewares: Vec<Arc<dyn Middleware>>,
 
     // States
@@ -238,7 +238,7 @@ impl Lumine<Ready> {
 
     /// Returns the route and parameters that matches the given URI, if one exists.
     #[doc(hidden)]
-    pub fn get_route(&self, path: &str) -> Option<(Arc<dyn RouteService>, Params)> {
+    pub fn get_route(&self, path: &str) -> Option<(Arc<dyn RouteEntry>, Params)> {
         let path = if path == "/" {
             Vec::new()
         } else {

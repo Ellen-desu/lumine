@@ -6,8 +6,7 @@
 //! step in the chain.
 
 use crate::{
-    middleware::Middleware, request::Request, response::Response,
-    routing::route_service::RouteService,
+    middleware::Middleware, request::Request, response::Response, routing::route_entry::RouteEntry,
 };
 use std::sync::Arc;
 
@@ -15,19 +14,19 @@ use std::sync::Arc;
 ///
 /// [`Next`] is responsible for advancing the request through the middleware
 /// pipeline. It holds a slice of remaining middlewares and the final
-/// [`RouteService`] handler.
+/// [`RouteEntry`] handler.
 ///
 /// This struct is typically passed into [`Middleware::handle`] and is used
 /// to delegate execution to the next middleware or the final route handler.
 pub struct Next {
     pub(crate) middlewares: Arc<[Arc<dyn Middleware>]>,
-    pub(crate) route: Arc<dyn RouteService>,
+    pub(crate) route: Arc<dyn RouteEntry>,
     pub(crate) index: usize,
 }
 
 impl Next {
     #[doc(hidden)]
-    pub fn new(middlewares: Vec<Arc<dyn Middleware>>, route: Arc<dyn RouteService>) -> Self {
+    pub fn new(middlewares: Vec<Arc<dyn Middleware>>, route: Arc<dyn RouteEntry>) -> Self {
         Self {
             middlewares: Arc::<[Arc<dyn Middleware>]>::from(middlewares),
             route,
