@@ -5,6 +5,7 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![doc = include_str!("../README.md")]
 #![deny(clippy::unwrap_used)]
+#![deny(clippy::panic)]
 #![deny(clippy::todo)]
 #![deny(clippy::unimplemented)]
 

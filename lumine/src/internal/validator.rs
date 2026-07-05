@@ -70,7 +70,7 @@ pub fn validate_headers(headers: &HeaderMap) -> Result<Framing, Error> {
     })
 }
 
-#[doc(hidden)]
+#[allow(clippy::panic)] // This functions is used at startup
 pub fn check_route_duplicates(routes: &[Arc<dyn RouteEntry>], segments: &[Segment]) {
     if routes.iter().any(|r| r.is_duplicated(segments)) {
         panic!("Conflicting routes");
