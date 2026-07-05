@@ -183,8 +183,8 @@ impl Lumine<Building> {
     where
         F: Fn(Request) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = R> + Send + 'static,
-        R: IntoResponse + Send + 'static,
-        W: Fn(Route<F>) -> Route<F> + Send + Sync + 'static,
+        R: IntoResponse,
+        W: Fn(Route<F>) -> Route<F>,
     {
         let segments = parser::parse_path(path, &self.limits);
         validator::check_route_duplicates(&self.routes, &segments);
