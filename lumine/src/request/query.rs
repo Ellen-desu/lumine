@@ -103,6 +103,10 @@ impl Query {
             .find(|(k, _)| k.as_ref() == key)
             .map(|(_, v)| v.iter().map(|v| v.as_ref()))
     }
+
+    pub fn contains_key(&self, key: &str) -> bool {
+        self.0.iter().any(|(k, _)| k.as_ref() == key)
+    }
 }
 
 impl Deref for Query {

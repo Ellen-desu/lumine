@@ -73,6 +73,10 @@ impl Params {
             .find(|(k, _)| *k == key)
             .map(|(_, v)| v.as_ref())
     }
+
+    pub fn contains_key(&self, key: &str) -> bool {
+        self.0.iter().any(|(k, _)| *k == key)
+    }
 }
 
 impl DerefMut for Params {
