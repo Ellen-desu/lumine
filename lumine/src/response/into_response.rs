@@ -161,7 +161,11 @@ impl IntoResponse for Response {
     }
 }
 
-impl<T: IntoResponse> IntoResponse for std::result::Result<T, T> {
+impl<T, E> IntoResponse for Result<T, E>
+where
+    T: IntoResponse,
+    E: IntoResponse,
+{
     /// Converts the `Result` into a response. If `Ok`, converts the inner value;
     /// if `Err`, converts the error value.
     fn into_response(self) -> Response {
