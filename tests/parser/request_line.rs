@@ -59,38 +59,20 @@ fn additional_keyword() {
 #[test]
 fn overflow_path_size() {
     let line = "GET /users HTTP/1.1";
-    let result = parse_request_line(
-        line,
-        &Limits {
-            max_path_size: 5,
-            ..Default::default()
-        },
-    );
+    let result = parse_request_line(line, &Limits::default().max_path_size(5));
     assert!(result.is_err());
 }
 
 #[test]
 fn overflow_query_size() {
     let line = "GET /?a=b HTTP/1.1";
-    let result = parse_request_line(
-        line,
-        &Limits {
-            max_query_size: 2,
-            ..Default::default()
-        },
-    );
+    let result = parse_request_line(line, &Limits::default().max_query_size(2));
     assert!(result.is_err());
 }
 
 #[test]
 fn overflow_query_keys_count() {
     let line = "GET /?a=a&b=b HTTP/1.1";
-    let result = parse_request_line(
-        line,
-        &Limits {
-            max_query_count: 1,
-            ..Default::default()
-        },
-    );
+    let result = parse_request_line(line, &Limits::default().max_query_count(1));
     assert!(result.is_err());
 }

@@ -87,14 +87,7 @@ async fn overflow_headers_count() {
                  User-Agent: Mozilla/5.0\r\n\
                  \r\n";
     let mut reader = BufReader::new(&raw[..]);
-    let result = read_request(
-        &mut reader,
-        &Limits {
-            max_headers_count: 1,
-            ..Default::default()
-        },
-    )
-    .await;
+    let result = read_request(&mut reader, &Limits::default().max_headers_count(1)).await;
     assert!(result.is_err());
 }
 
@@ -104,13 +97,6 @@ async fn overflow_body() {
                  Content-Length: 2\r\n\
                  \r\n";
     let mut reader = BufReader::new(&raw[..]);
-    let result = read_request(
-        &mut reader,
-        &Limits {
-            max_body_size: 1,
-            ..Default::default()
-        },
-    )
-    .await;
+    let result = read_request(&mut reader, &Limits::default().max_body_size(1)).await;
     assert!(result.is_err());
 }

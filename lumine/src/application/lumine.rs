@@ -217,6 +217,7 @@ impl Lumine<Ready> {
         }
     }
 
+    /// Serves incoming TLS connections using the provided [`TcpListener`] and [`ServerConfig`].
     #[cfg(feature = "tls")]
     pub async fn serve_tls(
         self,
