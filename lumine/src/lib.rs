@@ -31,7 +31,6 @@ pub mod filestream;
 pub use crate::{
     application::{Limits, Lumine, Timeouts},
     body::{Body, IntoBody},
-    error::Error,
     middleware::{Middleware, Next},
     request::{FromRequest, Params, Query, Request},
     response::{IntoResponse, Response},
