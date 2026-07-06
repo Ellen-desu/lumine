@@ -1,0 +1,10 @@
+[book]
+title = "Lumine HTTP Framework Guide"
+authors = ["Aldi Adinata"]
+language = "en"
+
+[rust]
+edition = "2024"
+
+[output.html]
+git-repository-url = "https://github.com/Ellen-desu/lumine"
