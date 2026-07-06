@@ -217,7 +217,7 @@ impl Lumine<Ready> {
         }
     }
 
-    /// Serves incoming TLS connections using the provided [`TcpListener`] and [`ServerConfig`].
+    /// Serves incoming TLS connections using the provided [`TcpListener`] and [`ServerConfig`](tokio_rustls::rustls::ServerConfig).
     #[cfg(feature = "tls")]
     pub async fn serve_tls(
         self,

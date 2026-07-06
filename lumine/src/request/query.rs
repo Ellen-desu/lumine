@@ -42,13 +42,9 @@ use std::ops::{Deref, DerefMut};
 /// 2. The request URI is matched against registered routes.
 /// 3. The query string is parsed into a [`Query`] structure.
 /// 4. The [`Query`] instance is attached to the request.
-/// 5. The handler function is invoked with the populated [`Request`].
+/// 5. The handler function is invoked with the populated [`Request`](crate::request::Request).
 ///
 /// As a result, [`Query`] is only available inside handlers.
-///
-/// # Accessing Query
-///
-/// Use [`Query::from_request`] to retrieve query parameters.
 ///
 /// # Example
 ///

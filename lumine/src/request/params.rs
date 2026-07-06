@@ -25,14 +25,10 @@ use std::ops::{Deref, DerefMut};
 /// 3. If the matched route defines dynamic segments (e.g. `:userId`),
 ///    their values are extracted.
 /// 4. A [`Params`] instance is created and attached to the request.
-/// 5. The handler function is invoked with the populated [`Request`].
+/// 5. The handler function is invoked with the populated [`Request`](crate::request::Request).
 ///
 /// As a result, [`Params`] is only available inside handlers and
 /// only when the matched route defines path parameters.
-///
-/// # Accessing Params
-///
-/// Use [`Params::from_request`] to retrieve parameters from a request.
 ///
 /// # Example
 ///
