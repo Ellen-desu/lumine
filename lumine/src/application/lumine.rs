@@ -159,7 +159,7 @@ impl Lumine<Building> {
     pub fn route<F, Fut, R>(mut self, path: &'static str, handler: F) -> Self
     where
         F: Fn(Request) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = R> + Send + 'static,
+        Fut: Future<Output = R> + Send,
         R: IntoResponse,
     {
         let segments = parser::parse_path(path, &self.limits);
@@ -182,7 +182,7 @@ impl Lumine<Building> {
     pub fn route_with<F, R, Fut, W>(mut self, path: &'static str, handler: F, with: W) -> Self
     where
         F: Fn(Request) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = R> + Send + 'static,
+        Fut: Future<Output = R> + Send,
         R: IntoResponse,
         W: Fn(Route<F>) -> Route<F>,
     {

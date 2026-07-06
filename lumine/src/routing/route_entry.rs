@@ -112,7 +112,7 @@ pub trait RouteEntry: Send + Sync {
 impl<F, Fut, R> RouteEntry for Route<F>
 where
     F: Fn(Request) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = R> + Send + 'static,
+    Fut: Future<Output = R> + Send,
     R: IntoResponse,
 {
     fn matches(&self, path_parts: &[&str]) -> Option<Params> {
