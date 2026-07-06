@@ -27,42 +27,49 @@ pub trait IntoBody {
 }
 
 impl IntoBody for &'static str {
+    /// Converts a string literal into a body containing its UTF-8 bytes.
     fn into_body(self) -> DynBody {
         Body::Bytes(self.as_bytes().to_vec())
     }
 }
 
 impl IntoBody for &[u8] {
+    /// Converts a byte slice into a body by copying the bytes.
     fn into_body(self) -> DynBody {
         Body::Bytes(self.to_vec())
     }
 }
 
 impl IntoBody for String {
+    /// Consumes the `String` and converts it into a body containing its bytes.
     fn into_body(self) -> DynBody {
         Body::Bytes(self.into_bytes())
     }
 }
 
 impl IntoBody for Vec<u8> {
+    /// Consumes the `Vec<u8>` and uses it directly as the body.
     fn into_body(self) -> DynBody {
         Body::Bytes(self)
     }
 }
 
 impl IntoBody for &String {
+    /// Converts a reference to a `String` into a body by copying its bytes.
     fn into_body(self) -> DynBody {
         Body::Bytes(self.as_bytes().to_vec())
     }
 }
 
 impl IntoBody for Bytes<'_> {
+    /// Converts a string byte iterator into a body by collecting its bytes.
     fn into_body(self) -> DynBody {
         Body::Bytes(self.collect())
     }
 }
 
 impl IntoBody for DynBody {
+    /// Returns the body directly.
     fn into_body(self) -> DynBody {
         self
     }
@@ -70,6 +77,7 @@ impl IntoBody for DynBody {
 
 #[cfg(feature = "filestream")]
 impl IntoBody for crate::filestream::FileStream {
+    /// Converts a `FileStream` into a stream-based body.
     fn into_body(self) -> DynBody {
         Body::Stream(Box::new(self))
     }

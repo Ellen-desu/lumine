@@ -64,6 +64,7 @@ pub trait IntoResponse {
 }
 
 impl IntoResponse for () {
+    /// Returns an empty response with a 200 OK status code.
     fn into_response(self) -> Response {
         http::Response::new(Body::Empty)
     }
@@ -73,6 +74,7 @@ impl<B> IntoResponse for (StatusCode, B)
 where
     B: IntoBody,
 {
+    /// Returns a response with the given status code and body.
     fn into_response(self) -> Response {
         let mut response = http::Response::new(self.1.into_body());
         *response.status_mut() = self.0;
@@ -81,6 +83,7 @@ where
 }
 
 impl IntoResponse for (StatusCode, HeaderMap) {
+    /// Returns a response with the given status code and headers, with an empty body.
     fn into_response(self) -> Response {
         let mut response = http::Response::new(Body::Empty);
         *response.status_mut() = self.0;
@@ -93,6 +96,7 @@ impl<B> IntoResponse for (HeaderMap, B)
 where
     B: IntoBody,
 {
+    /// Returns a response with the given headers and body, with a default 200 OK status code.
     fn into_response(self) -> Response {
         let mut response = http::Response::new(self.1.into_body());
         *response.headers_mut() = self.0;
@@ -104,6 +108,7 @@ impl<B> IntoResponse for (StatusCode, HeaderMap, B)
 where
     B: IntoBody,
 {
+    /// Returns a response with the given status code, headers, and body.
     fn into_response(self) -> Response {
         let mut response = http::Response::new(self.2.into_body());
         *response.status_mut() = self.0;
@@ -113,6 +118,7 @@ where
 }
 
 impl IntoResponse for StatusCode {
+    /// Returns a response with the given status code and an empty body.
     fn into_response(self) -> Response {
         let mut response = http::Response::new(Body::Empty);
         *response.status_mut() = self;
@@ -124,12 +130,14 @@ impl<B> IntoResponse for B
 where
     B: IntoBody,
 {
+    /// Returns a response with the given body, with a default 200 OK status code.
     fn into_response(self) -> Response {
         http::Response::new(self.into_body())
     }
 }
 
 impl IntoResponse for Error {
+    /// Converts an application [`Error`] into an HTTP response with an appropriate status code.
     fn into_response(self) -> Response {
         let status = match self {
             Error::UriTooLarge => StatusCode::URI_TOO_LONG,
@@ -147,12 +155,15 @@ impl IntoResponse for Error {
 }
 
 impl IntoResponse for Response {
+    /// Returns the [`Response`] directly.
     fn into_response(self) -> Response {
         self
     }
 }
 
 impl<T: IntoResponse> IntoResponse for std::result::Result<T, T> {
+    /// Converts the `Result` into a response. If `Ok`, converts the inner value;
+    /// if `Err`, converts the error value.
     fn into_response(self) -> Response {
         match self {
             Ok(value) => value.into_response(),
