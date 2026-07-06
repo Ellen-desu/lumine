@@ -146,7 +146,7 @@ async fn json_response(_req: Request) -> impl IntoResponse {
 async fn inline_response(_req: Request) -> impl IntoResponse {
     match FileStream::open_with_disposition("assets/lumine.png", Disposition::Inline).await {
         Ok(stream) => stream,
-        Err(_) => panic!(""),
+        Err(err) => panic!("Unable to access file: {err}"),
     }
 }
 
@@ -154,7 +154,7 @@ async fn inline_response(_req: Request) -> impl IntoResponse {
 async fn attachment_response(_req: Request) -> impl IntoResponse {
     match FileStream::open_with_disposition("assets/lumine.png", Disposition::Attachment).await {
         Ok(stream) => stream,
-        Err(_) => panic!(""),
+        Err(err) => panic!("Unable to access file: {err}"),
     }
 }
 
