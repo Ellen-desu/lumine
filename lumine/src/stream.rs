@@ -20,6 +20,9 @@ pub trait Stream: Send {
     /// operation fails. A return value of `0` indicates the end of the stream.
     async fn next_chunk(&mut self, buffer: &mut [u8]) -> Result<usize, std::io::Error>;
 
+    /// Returns a hint about the headers of the stream, if known.
+    ///
+    /// This is used to set the `Content-Type` header in the response.
     fn headers_hint(&self) -> Option<&HeaderMap> {
         None
     }
