@@ -17,6 +17,8 @@ pub struct Timeouts {
     pub(crate) response_write: Duration,
     /// Timeout for reading data from a stream.
     pub(crate) stream_read: Duration,
+    /// Timeout for the TLS handshake.
+    pub(crate) tls_handshake: Duration,
 }
 
 impl Timeouts {
@@ -61,6 +63,20 @@ impl Timeouts {
         self.stream_read = stream_read;
         self
     }
+
+    /// Sets the timeout for the TLS handshake.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `tls_handshake` is zero.
+    pub fn tls_handshake(mut self, tls_handshake: Duration) -> Self {
+        assert!(
+            !tls_handshake.is_zero(),
+            "tls_handshake timeout must be greater than 0"
+        );
+        self.tls_handshake = tls_handshake;
+        self
+    }
 }
 
 impl Default for Timeouts {
@@ -70,6 +86,7 @@ impl Default for Timeouts {
             request_read: Duration::from_secs(30),
             response_write: Duration::from_secs(30),
             stream_read: Duration::from_secs(30),
+            tls_handshake: Duration::from_secs(5),
         }
     }
 }

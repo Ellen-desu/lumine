@@ -225,14 +225,21 @@ impl Lumine<Ready> {
         config: tokio_rustls::rustls::ServerConfig,
     ) {
         let app = Arc::new(self);
-        let acceptor = tokio_rustls::TlsAcceptor::from(Arc::new(config));
+        let acceptor = Arc::new(tokio_rustls::TlsAcceptor::from(Arc::new(config)));
 
         loop {
-            if let Ok((stream, _)) = listener.accept().await
-                && let Ok(tls_stream) = acceptor.accept(stream).await
-            {
+            if let Ok((stream, _)) = listener.accept().await {
                 let app = Arc::clone(&app);
-                tokio::spawn(async move { connection::handle_connection(app, tls_stream).await });
+                let acceptor = Arc::clone(&acceptor);
+
+                tokio::spawn(async move {
+                    if let Ok(Ok(tls_stream)) =
+                        tokio::time::timeout(app.timeouts.tls_handshake, acceptor.accept(stream))
+                            .await
+                    {
+                        connection::handle_connection(app, tls_stream).await
+                    }
+                });
             }
         }
     }
