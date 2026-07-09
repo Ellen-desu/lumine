@@ -4,7 +4,7 @@ use crate::{
     internal::{framing::Framing, parser, validator},
     request::Request,
 };
-use http::{HeaderMap, Method};
+use http::HeaderMap;
 use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncReadExt, BufReader};
 
 /// This function reads the request line, headers, and body from the stream
@@ -46,23 +46,20 @@ pub async fn read_request<R: AsyncRead + Unpin>(
 
     let framing = validator::validate_headers(&headers)?;
 
-    let body = match method {
-        Method::POST | Method::PUT | Method::PATCH => match framing.content_length {
-            Some(0) | None => Vec::new(),
-            Some(content_length) => {
-                if content_length > limits.max_body_size {
-                    return Err(Error::BodyTooLarge);
-                }
-
-                let mut body = vec![0u8; content_length];
-                if reader.read_exact(&mut body).await.is_err() {
-                    return Ok(None);
-                }
-
-                body
+    let body = match framing.content_length {
+        Some(0) | None => Vec::new(),
+        Some(content_length) => {
+            if content_length > limits.max_body_size {
+                return Err(Error::BodyTooLarge);
             }
-        },
-        _ => Vec::new(),
+
+            let mut body = vec![0u8; content_length];
+            if reader.read_exact(&mut body).await.is_err() {
+                return Ok(None);
+            }
+
+            body
+        }
     };
 
     let mut request = http::Request::new(body);
