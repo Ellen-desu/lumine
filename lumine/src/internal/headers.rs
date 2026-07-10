@@ -1,17 +1,23 @@
 #[cfg(feature = "date")]
 use std::time::SystemTime;
 
-use http::{HeaderMap, HeaderValue, header};
+use http::{HeaderMap, HeaderValue, StatusCode, header};
 
 use crate::body::{Body, DynBody};
 
-pub fn set_headers(headers: &mut HeaderMap, body: &DynBody, should_close: bool) {
+pub fn set_headers(
+    headers: &mut HeaderMap,
+    status: StatusCode,
+    body: &mut DynBody,
+    should_close: bool,
+    is_method_head: bool,
+) {
     #[cfg(feature = "date")]
     headers.insert(
         header::DATE,
         httpdate::fmt_http_date(SystemTime::now())
             .parse()
-            .expect("Parse to header should always work"),
+            .expect("parse string to header should always work"),
     );
 
     headers.insert(
@@ -19,19 +25,31 @@ pub fn set_headers(headers: &mut HeaderMap, body: &DynBody, should_close: bool) 
         HeaderValue::from_static(if should_close { "close" } else { "keep-alive" }),
     );
 
+    if status.is_informational() || status == StatusCode::NO_CONTENT {
+        *body = Body::Empty;
+    }
+
+    let not_modified = status == StatusCode::NOT_MODIFIED;
+
     match &body {
         Body::Empty => {
-            headers.insert(header::CONTENT_LENGTH, 0.into());
+            if !not_modified {
+                headers.insert(header::CONTENT_LENGTH, 0.into());
+            }
         }
         Body::Bytes(bytes) => {
-            headers.insert(header::CONTENT_LENGTH, bytes.len().into());
+            if !not_modified {
+                headers.insert(header::CONTENT_LENGTH, bytes.len().into());
+            }
 
             insert_content_type(headers, "text/plain");
         }
         Body::Stream(stream) => {
-            if let Some(length) = stream.size_hint() {
+            if let Some(length) = stream.size_hint()
+                && !not_modified
+            {
                 headers.insert(header::CONTENT_LENGTH, length.into());
-            } else {
+            } else if !is_method_head {
                 headers.insert(
                     header::TRANSFER_ENCODING,
                     HeaderValue::from_static("chunked"),
@@ -46,6 +64,16 @@ pub fn set_headers(headers: &mut HeaderMap, body: &DynBody, should_close: bool) 
 
             insert_content_type(headers, "application/octet-stream");
         }
+    }
+
+    if is_method_head || not_modified {
+        headers.remove(header::TRANSFER_ENCODING);
+
+        if not_modified {
+            headers.remove(header::CONTENT_LENGTH);
+        }
+
+        *body = Body::Empty;
     }
 }
 

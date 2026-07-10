@@ -8,6 +8,7 @@ use crate::{
     internal::{dispatch, headers, reader, writer},
     response::into_response::IntoResponse,
 };
+use http::Method;
 use std::sync::Arc;
 use tokio::io::{AsyncRead, AsyncWrite};
 
@@ -44,13 +45,21 @@ pub async fn handle_connection<Rw: AsyncRead + AsyncWrite + Unpin>(
             }
         };
 
-        let (mut parts, body) = dispatch::dispatch_request(request, &app).await.into_parts();
+        let is_method_head = request.method() == Method::HEAD;
+
+        let (mut parts, mut body) = dispatch::dispatch_request(request, &app).await.into_parts();
 
         let should_close = framing.connection.is_close()
             || parts.status.is_server_error()
             || parts.status.is_client_error();
 
-        headers::set_headers(&mut parts.headers, &body, should_close);
+        headers::set_headers(
+            &mut parts.headers,
+            parts.status,
+            &mut body,
+            should_close,
+            is_method_head,
+        );
 
         let response = http::Response::from_parts(parts, body);
         if writer::write_response(response, &mut stream, timeouts)
