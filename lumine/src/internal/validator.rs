@@ -4,24 +4,82 @@ use crate::{
     routing::{route_entry::RouteEntry, segment::Segment},
 };
 use http::{HeaderMap, header};
-use std::sync::Arc;
+use std::{
+    net::{Ipv4Addr, Ipv6Addr},
+    sync::Arc,
+};
 
 /// Validates the headers of an HTTP request and returns a [`Framing`] instance.
 pub fn validate_headers(headers: &HeaderMap) -> Result<Framing, Error> {
-    // RFC 9112: The HOST header field is required
-    if !headers.contains_key(header::HOST) {
+    let mut host = None;
+    for value in headers.get_all(http::header::HOST) {
+        if host.is_some() {
+            return Err(Error::InvalidHeaders);
+        }
+        host = Some(value.to_str().map_err(|_| Error::InvalidHeaders)?);
+    }
+
+    let Some(host_raw) = host else {
         return Err(Error::InvalidHeaders);
+    };
+
+    let (host, port) = if host_raw.starts_with('[') {
+        let end_bracket = host_raw.find(']').ok_or(Error::InvalidHeaders)?;
+        let (host, remainder) = host_raw.split_at(end_bracket + 1);
+
+        if !remainder.is_empty() && !remainder.starts_with(':') {
+            println!("Enter 1");
+            return Err(Error::InvalidHeaders);
+        }
+
+        let port = remainder.strip_prefix(':');
+
+        (host, port)
+    } else {
+        let mut parts = host_raw.splitn(2, ':');
+
+        let host = parts.next().ok_or(Error::InvalidHeaders)?;
+        let port = parts.next();
+
+        (host, port)
+    };
+
+    if host.starts_with('[') {
+        let inner_ip = &host[1..host.len() - 1];
+        inner_ip
+            .parse::<Ipv6Addr>()
+            .map_err(|_| Error::InvalidHeaders)?;
+    } else if host.parse::<Ipv4Addr>().is_err() {
+        if host.is_empty() || host.len() > 253 {
+            return Err(Error::InvalidHeaders);
+        }
+
+        for label in host.split('.') {
+            if label.is_empty() || label.len() > 63 {
+                return Err(Error::InvalidHeaders);
+            }
+
+            if label.starts_with('-') || label.ends_with('-') {
+                return Err(Error::InvalidHeaders);
+            }
+
+            if !label.chars().all(|c| c.is_ascii_alphanumeric() || c == '-') {
+                return Err(Error::InvalidHeaders);
+            }
+        }
+    }
+
+    if let Some(port) = port {
+        port.parse::<u16>().map_err(|_| Error::InvalidHeaders)?;
     }
 
     let has_content_length = headers.contains_key(header::CONTENT_LENGTH);
     let has_transfer_encoding = headers.contains_key(header::TRANSFER_ENCODING);
 
-    // RFC 9112: Do not accept Content-Length + Transfer-Encoding
     if has_content_length && has_transfer_encoding {
         return Err(Error::InvalidHeaders);
     }
 
-    // Unsupported Transfer-Encoding
     if has_transfer_encoding {
         return Err(Error::Unimplemented);
     }
