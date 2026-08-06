@@ -28,7 +28,6 @@ pub fn validate_headers(headers: &HeaderMap) -> Result<Framing, Error> {
         let (host, remainder) = host_raw.split_at(end_bracket + 1);
 
         if !remainder.is_empty() && !remainder.starts_with(':') {
-            println!("Enter 1");
             return Err(Error::InvalidHeaders);
         }
 
