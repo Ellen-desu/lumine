@@ -8,7 +8,7 @@ edition = "2024"
 license = "MIT"
 
 [dependencies]
-lumine = { path = "../lumine", features = ["filestream", "tls"] }
+lumine = { version = "0", path = "../lumine", features = ["filestream", "tls"] }
 tokio = { version = "1.52", features = ["rt-multi-thread", "macros"] }
 anyhow = "1.0"
 
