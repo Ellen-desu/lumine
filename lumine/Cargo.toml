@@ -19,7 +19,7 @@ async-trait = "0.1"
 httpdate = "1.0"
 
 infer = { version = "0.22", optional = true }
-tokio-rustls = { version = "0.26", optional = true }
+tokio-rustls = { version = "0.26", default-features = false, features = ["aws_lc_rs"], optional = true }
 
 [features]
 filestream = ["dep:infer"]
