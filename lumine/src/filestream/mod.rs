@@ -52,11 +52,17 @@ impl FileStream {
 
         let file = File::open(path).await?;
 
-        let filename = path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("download")
-            .to_string();
+        let filename = {
+            if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                name.chars()
+                    .filter(|c| !c.is_control())
+                    .collect::<String>()
+                    .replace('\\', "\\\\")
+                    .replace('"', "\\\"")
+            } else {
+                "download".to_string()
+            }
+        };
 
         let length = file.metadata().await?.len() as usize;
 
