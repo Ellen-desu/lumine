@@ -1,4 +1,3 @@
-#[cfg(feature = "date")]
 use std::time::SystemTime;
 
 use http::{HeaderMap, HeaderValue, StatusCode, header};
@@ -12,7 +11,6 @@ pub fn set_headers(
     should_close: bool,
     is_method_head: bool,
 ) {
-    #[cfg(feature = "date")]
     headers.insert(
         header::DATE,
         httpdate::fmt_http_date(SystemTime::now())
