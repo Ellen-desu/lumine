@@ -8,6 +8,8 @@
 /// Resource limits for the HTTP server.
 #[derive(Debug, Clone, Copy)]
 pub struct Limits {
+    /// Maximum number of connections allowed.
+    pub(crate) max_connections: usize,
     /// Maximum size of the request path.
     pub(crate) max_path_size: usize,
     /// Maximum total size of query parameters in bytes.
@@ -27,6 +29,20 @@ pub struct Limits {
 }
 
 impl Limits {
+    /// Specifies the maximum number of connections for the application.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `max_connections` is zero.
+    pub fn max_connections(mut self, max_connections: usize) -> Self {
+        assert!(
+            max_connections > 0,
+            "max_connections must be greater than 0"
+        );
+        self.max_connections = max_connections;
+        self
+    }
+
     /// Sets the maximum size of the request path.
     ///
     /// # Panics
@@ -135,6 +151,8 @@ impl Limits {
 impl Default for Limits {
     fn default() -> Self {
         Self {
+            max_connections: 10_000,
+
             max_path_size: 2048, // 2 KB
 
             max_query_size: 8 * 1024, // 8 KB

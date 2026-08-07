@@ -17,7 +17,8 @@ use crate::{
     routing::{route::Route, route_entry::RouteEntry},
 };
 use std::{marker::PhantomData, sync::Arc};
-use tokio::net::TcpListener;
+use tokio::{net::TcpListener, sync::Semaphore};
+use tokio_rustls::TlsAcceptor;
 
 /// The main HTTP application structure.
 ///
@@ -207,12 +208,19 @@ impl Lumine<Ready> {
     /// This method consumes the application in the [`Ready`] state and begins
     /// accepting connections from the provided [`TcpListener`].
     pub async fn serve(self, listener: TcpListener) {
+        let semaphore = Arc::new(Semaphore::new(self.limits.max_connections));
         let app = Arc::new(self);
 
         loop {
-            if let Ok((stream, _)) = listener.accept().await {
+            if let Ok((stream, _)) = listener.accept().await
+                && let Ok(permit) = Arc::clone(&semaphore).acquire_owned().await
+            {
                 let app = Arc::clone(&app);
-                tokio::spawn(async move { connection::handle_connection(app, stream).await });
+
+                tokio::spawn(async move {
+                    let _permit = permit;
+                    connection::handle_connection(app, stream).await;
+                });
             }
         }
     }
@@ -224,11 +232,14 @@ impl Lumine<Ready> {
         listener: TcpListener,
         config: tokio_rustls::rustls::ServerConfig,
     ) {
+        let semaphore = Arc::new(Semaphore::new(self.limits.max_connections));
         let app = Arc::new(self);
-        let acceptor = Arc::new(tokio_rustls::TlsAcceptor::from(Arc::new(config)));
+        let acceptor = Arc::new(TlsAcceptor::from(Arc::new(config)));
 
         loop {
-            if let Ok((stream, _)) = listener.accept().await {
+            if let Ok((stream, _)) = listener.accept().await
+                && let Ok(permit) = Arc::clone(&semaphore).acquire_owned().await
+            {
                 let app = Arc::clone(&app);
                 let acceptor = Arc::clone(&acceptor);
 
@@ -237,7 +248,8 @@ impl Lumine<Ready> {
                         tokio::time::timeout(app.timeouts.tls_handshake, acceptor.accept(stream))
                             .await
                     {
-                        connection::handle_connection(app, tls_stream).await
+                        let _permit = permit;
+                        connection::handle_connection(app, tls_stream).await;
                     }
                 });
             }
