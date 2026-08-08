@@ -19,6 +19,6 @@ impl FromRequest for Query {
     fn from_request(req: &Request) -> &Self {
         req.extensions()
             .get::<Self>()
-            .expect("path parameters are always attached")
+            .expect("query parameters are always attached")
     }
 }
