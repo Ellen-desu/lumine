@@ -18,7 +18,6 @@ use crate::{
 };
 use std::{marker::PhantomData, sync::Arc};
 use tokio::{net::TcpListener, sync::Semaphore};
-use tokio_rustls::TlsAcceptor;
 
 /// The main HTTP application structure.
 ///
@@ -234,7 +233,7 @@ impl Lumine<Ready> {
     ) {
         let semaphore = Arc::new(Semaphore::new(self.limits.max_connections));
         let app = Arc::new(self);
-        let acceptor = Arc::new(TlsAcceptor::from(Arc::new(config)));
+        let acceptor = Arc::new(tokio_rustls::TlsAcceptor::from(Arc::new(config)));
 
         loop {
             if let Ok((stream, _)) = listener.accept().await
