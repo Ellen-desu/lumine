@@ -30,7 +30,7 @@ pub mod filestream;
 #[doc(inline)]
 pub use crate::{
     application::{Limits, Lumine, Timeouts},
-    body::{Body, IntoBody},
+    body::{Body, DynBody, IntoBody},
     middleware::{Middleware, Next},
     request::{FromRequest, Params, Query, Request},
     response::{IntoResponse, Response},
