@@ -3,7 +3,7 @@
 //! This module provides the [`Params`] struct, which holds dynamic segments
 //! extracted from the request path during routing.
 
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 
 /// Represents path parameters extracted from a matched route.
 ///
@@ -62,6 +62,11 @@ impl Params {
         Self(Vec::with_capacity(capacity))
     }
 
+    /// Inserts a key-value pair into the `Params`.
+    pub fn insert(&mut self, key: &'static str, value: Box<str>) {
+        self.0.push((key, value));
+    }
+
     /// Returns the value associated with the given key, if one exists.
     pub fn get(&self, key: &str) -> Option<&str> {
         self.0
@@ -70,14 +75,9 @@ impl Params {
             .map(|(_, v)| v.as_ref())
     }
 
+    /// Returns whether the `Params` contains a value for the given key.
     pub fn contains_key(&self, key: &str) -> bool {
         self.0.iter().any(|(k, _)| *k == key)
-    }
-}
-
-impl DerefMut for Params {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
     }
 }
 

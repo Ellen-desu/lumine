@@ -133,7 +133,7 @@ where
                     }
                 }
                 Segment::Param(param_name) => {
-                    params.push((param_name, part.to_string().into_boxed_str()));
+                    params.insert(param_name, part.to_string().into_boxed_str());
                 }
                 Segment::Wildcard => break,
             }

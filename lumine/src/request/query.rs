@@ -3,7 +3,7 @@
 //! This module provides the [`Query`] struct, which handles the parsing
 //! and storage of query parameters from the request URI.
 
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 
 /// Represents query parameters extracted from the request URI.
 ///
@@ -100,6 +100,7 @@ impl Query {
             .map(|(_, v)| v.iter().map(|v| v.as_ref()))
     }
 
+    /// Returns whether the `Query` contains a value for the given key.
     pub fn contains_key(&self, key: &str) -> bool {
         self.0.iter().any(|(k, _)| k.as_ref() == key)
     }
@@ -110,11 +111,5 @@ impl Deref for Query {
 
     fn deref(&self) -> &Self::Target {
         &self.0
-    }
-}
-
-impl DerefMut for Query {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
     }
 }
