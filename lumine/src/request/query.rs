@@ -113,6 +113,11 @@ impl Query {
         self.0.iter().map(|(_, v)| v.as_slice())
     }
 
+    /// Returns an iterator over the key-value pairs in the `Query`.
+    pub fn iter(&self) -> impl Iterator<Item = &(Box<str>, Vec<Box<str>>)> {
+        self.0.iter()
+    }
+
     /// Returns the number of key-value pairs in the `Query`.
     pub fn len(&self) -> usize {
         self.0.len()
@@ -121,5 +126,14 @@ impl Query {
     /// Returns whether the `Query` is empty.
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
+    }
+}
+
+impl<'a> IntoIterator for &'a Query {
+    type Item = &'a (Box<str>, Vec<Box<str>>);
+    type IntoIter = std::slice::Iter<'a, (Box<str>, Vec<Box<str>>)>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
     }
 }

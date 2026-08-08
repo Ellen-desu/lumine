@@ -83,6 +83,11 @@ impl Params {
         self.0.iter().map(|(k, _)| *k)
     }
 
+    /// Returns an iterator over the key-value pairs in the `Params`.
+    pub fn iter(&self) -> impl Iterator<Item = &(&'static str, Box<str>)> {
+        self.0.iter()
+    }
+
     /// Returns an iterator over the values in the `Params`.
     pub fn values(&self) -> impl Iterator<Item = &str> + '_ {
         self.0.iter().map(|(_, v)| v.as_ref())
@@ -96,5 +101,14 @@ impl Params {
     /// Returns whether the `Params` is empty.
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
+    }
+}
+
+impl<'a> IntoIterator for &'a Params {
+    type Item = &'a (&'static str, Box<str>);
+    type IntoIter = std::slice::Iter<'a, (&'static str, Box<str>)>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
     }
 }
