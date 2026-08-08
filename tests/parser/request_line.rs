@@ -24,22 +24,11 @@ fn multiple_queries() {
     assert_eq!(uri.path(), "/");
     assert_eq!(version, Version::HTTP_11);
 
-    assert_eq!(
-        *query,
-        vec![
-            (
-                "a".to_string().into_boxed_str(),
-                vec!["test".to_string().into_boxed_str()]
-            ),
-            (
-                "q".to_string().into_boxed_str(),
-                vec![
-                    "test2".to_string().into_boxed_str(),
-                    "test1".to_string().into_boxed_str()
-                ]
-            )
-        ]
-    );
+    let a = query.get_all("a").unwrap().collect::<Vec<_>>();
+    assert_eq!(a, vec!["test"]);
+
+    let q = query.get_all("q").unwrap().collect::<Vec<_>>();
+    assert_eq!(q, vec!["test2", "test1"]);
 }
 
 #[test]

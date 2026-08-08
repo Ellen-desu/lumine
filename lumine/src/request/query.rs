@@ -3,8 +3,6 @@
 //! This module provides the [`Query`] struct, which handles the parsing
 //! and storage of query parameters from the request URI.
 
-use std::ops::Deref;
-
 /// Represents query parameters extracted from the request URI.
 ///
 /// `Query` contains key-value pairs parsed from the query string
@@ -104,12 +102,24 @@ impl Query {
     pub fn contains_key(&self, key: &str) -> bool {
         self.0.iter().any(|(k, _)| k.as_ref() == key)
     }
-}
 
-impl Deref for Query {
-    type Target = Vec<(Box<str>, Vec<Box<str>>)>;
+    /// Returns an iterator over the keys in the `Query`.
+    pub fn keys(&self) -> impl Iterator<Item = &str> {
+        self.0.iter().map(|(k, _)| k.as_ref())
+    }
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    /// Returns an iterator over the values in the `Query`.
+    pub fn values(&self) -> impl Iterator<Item = &[Box<str>]> {
+        self.0.iter().map(|(_, v)| v.as_slice())
+    }
+
+    /// Returns the number of key-value pairs in the `Query`.
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    /// Returns whether the `Query` is empty.
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 }

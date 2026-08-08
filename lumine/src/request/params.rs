@@ -3,8 +3,6 @@
 //! This module provides the [`Params`] struct, which holds dynamic segments
 //! extracted from the request path during routing.
 
-use std::ops::Deref;
-
 /// Represents path parameters extracted from a matched route.
 ///
 /// `Params` contains key-value pairs parsed from dynamic segments
@@ -79,12 +77,24 @@ impl Params {
     pub fn contains_key(&self, key: &str) -> bool {
         self.0.iter().any(|(k, _)| *k == key)
     }
-}
 
-impl Deref for Params {
-    type Target = Vec<(&'static str, Box<str>)>;
+    /// Returns an iterator over the keys in the `Params`.
+    pub fn keys(&self) -> impl Iterator<Item = &'static str> + '_ {
+        self.0.iter().map(|(k, _)| *k)
+    }
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    /// Returns an iterator over the values in the `Params`.
+    pub fn values(&self) -> impl Iterator<Item = &str> + '_ {
+        self.0.iter().map(|(_, v)| v.as_ref())
+    }
+
+    /// Returns the number of key-value pairs in the `Params`.
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    /// Returns whether the `Params` is empty.
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 }
