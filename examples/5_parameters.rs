@@ -39,7 +39,7 @@ async fn main() -> anyhow::Result<()> {
         // Query parameters
         .route("/search", search_handler)
         // Multiple path parameters
-        .route("/users/:user_id/posts/:postId", get_post_handler)
+        .route("/users/:user_id/posts/:post_id", get_post_handler)
         // Multiple path parameters with query
         .route("/users/:user_id/posts", list_posts_handler)
         // Root endpoint
@@ -187,7 +187,7 @@ async fn search_handler(req: Request) -> impl IntoResponse {
 
 /// Handler: Get specific post by user and post IDs
 ///
-/// URL: /users/:user_id/posts/:postId
+/// URL: /users/:user_id/posts/:post_id
 /// Example: /users/10/posts/20
 async fn get_post_handler(req: Request) -> impl IntoResponse {
     let params = Params::from_request(&req);
@@ -202,12 +202,12 @@ async fn get_post_handler(req: Request) -> impl IntoResponse {
     };
 
     // Get post ID
-    let post_id = match params.get("postId") {
+    let post_id = match params.get("post_id") {
         Some(pid) => match pid.parse::<u32>() {
             Ok(n) => n,
-            Err(_) => return (StatusCode::BAD_REQUEST, "Invalid postId".to_string()),
+            Err(_) => return (StatusCode::BAD_REQUEST, "Invalid post_id".to_string()),
         },
-        None => return (StatusCode::BAD_REQUEST, "Missing postId".to_string()),
+        None => return (StatusCode::BAD_REQUEST, "Missing post_id".to_string()),
     };
 
     // Simulate fetching post
