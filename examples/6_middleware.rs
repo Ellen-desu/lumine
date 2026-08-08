@@ -9,10 +9,10 @@
 //! - Using `route_with` for per-route configuration
 //!
 //! ## Try It
-//! `bash
+//! ```bash
 //! cargo run --example middleware
 //! curl http://127.0.0.1:8080
-//! `
+//! ```
 
 use lumine::prelude::*;
 use tokio::net::TcpListener;
