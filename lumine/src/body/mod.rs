@@ -47,12 +47,12 @@ impl<S: Stream> Body<S> {
     }
 
     /// Returns a `Stream` variant of the body.
-    pub fn stream(stream: S) -> Self {
+    pub fn from_stream(stream: S) -> Self {
         Self::Stream(stream)
     }
 
     /// Returns a `Bytes` variant of the body.
-    pub fn bytes(bytes: impl Into<Vec<u8>>) -> Self {
+    pub fn from_bytes(bytes: impl Into<Vec<u8>>) -> Self {
         Self::Bytes(bytes.into())
     }
 
