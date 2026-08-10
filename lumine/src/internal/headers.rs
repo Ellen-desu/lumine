@@ -18,6 +18,18 @@ pub fn set_headers(
             .expect("parse string to header should always work"),
     );
 
+    // Browser compatibility: set X-Content-Type-Options to nosniff to prevent MIME type sniffing
+    headers.insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+
+    // Browser compatibility: set Referrer-Policy to strict-origin-when-cross-origin to prevent leaking referrer information
+    headers.insert(
+        header::REFERRER_POLICY,
+        HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
+
     headers.insert(
         header::CONNECTION,
         HeaderValue::from_static(if should_close { "close" } else { "keep-alive" }),
