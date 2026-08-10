@@ -27,7 +27,7 @@ pub enum Body<S: Stream> {
 impl<S: Stream> Body<S> {
     /// Returns `true` if the body is empty, `false` otherwise.
     pub fn is_empty(&self) -> bool {
-        matches!(self, Self::Empty)
+        matches!(self, Self::Empty) || matches!(self, Self::Bytes(bytes) if bytes.is_empty())
     }
 
     /// Returns a reference to the body as bytes, if it is a `Bytes` variant.
