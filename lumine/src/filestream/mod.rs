@@ -32,6 +32,35 @@ pub struct FileStream {
 }
 
 impl FileStream {
+    pub async fn open(path: impl AsRef<Path>) -> std::io::Result<Self> {
+        let path = path.as_ref();
+
+        let file = File::open(path).await?;
+
+        let length = file.metadata().await?.len();
+
+        let reader = BufReader::new(file);
+
+        let mime_type = match infer::get_from_path(path)? {
+            Some(info) => info.mime_type(),
+            None => "application/octet-stream",
+        };
+
+        let mut headers = HeaderMap::with_capacity(1);
+        headers.insert(
+            header::CONTENT_TYPE,
+            mime_type
+                .parse()
+                .expect("parsing from str to header value should never fail"),
+        );
+
+        Ok(Self {
+            reader,
+            headers,
+            length,
+        })
+    }
+
     /// Opens a file at the given path with a specific [`Disposition`].
     ///
     /// This method will:
@@ -47,7 +76,6 @@ impl FileStream {
         path: impl AsRef<Path>,
         disposition: Disposition,
     ) -> std::io::Result<Self> {
-        let mut headers = HeaderMap::new();
         let path = path.as_ref();
 
         let file = File::open(path).await?;
@@ -72,6 +100,8 @@ impl FileStream {
             Some(info) => info.mime_type(),
             None => "application/octet-stream",
         };
+
+        let mut headers = HeaderMap::with_capacity(2);
 
         headers.insert(
             header::CONTENT_TYPE,
