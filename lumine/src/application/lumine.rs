@@ -165,12 +165,8 @@ impl Lumine<Building> {
         let segments = parser::parse_path(path, &self.limits);
         validator::check_route_duplicates(&self.routes, &segments);
 
-        self.routes.push(Arc::new(Route {
-            segments,
-            middlewares: Vec::new(),
-            run_before_global: false,
-            handler,
-        }));
+        self.routes
+            .push(Arc::new(Route::new(segments, Vec::new(), handler)));
 
         self
     }
@@ -189,12 +185,7 @@ impl Lumine<Building> {
         let segments = parser::parse_path(path, &self.limits);
         validator::check_route_duplicates(&self.routes, &segments);
 
-        let route = with(Route {
-            segments,
-            middlewares: Vec::with_capacity(3),
-            run_before_global: false,
-            handler,
-        });
+        let route = with(Route::new(segments, Vec::with_capacity(3), handler));
 
         self.routes.push(Arc::new(route));
         self

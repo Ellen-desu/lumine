@@ -10,13 +10,24 @@ use crate::{middleware::Middleware, routing::segment::Segment};
 
 /// A concrete route that matches a path and dispatches to a handler.
 pub struct Route<F> {
-    pub segments: Vec<Segment>,
-    pub middlewares: Vec<Arc<dyn Middleware>>,
-    pub run_before_global: bool,
-    pub handler: F,
+    pub(crate) segments: Vec<Segment>,
+    pub(crate) middlewares: Vec<Arc<dyn Middleware>>,
+    pub(crate) run_before_global: bool,
+    pub(crate) handler: F,
 }
 
 impl<F> Route<F> {
+    /// Registers a new route with the given path and handler.
+    #[doc(hidden)]
+    pub fn new(segments: Vec<Segment>, middlewares: Vec<Arc<dyn Middleware>>, handler: F) -> Self {
+        Self {
+            segments,
+            middlewares,
+            run_before_global: false,
+            handler,
+        }
+    }
+
     /// Adds a new middleware to this specific route.
     pub fn middleware<M: Middleware>(mut self, middleware: M) -> Self {
         self.middlewares.push(Arc::new(middleware));

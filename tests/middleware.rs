@@ -17,12 +17,7 @@ impl Middleware for AppendMiddleware {
 
 #[tokio::test]
 async fn calling_middleware_and_ordering() {
-    let route = Route {
-        segments: vec![],
-        middlewares: vec![],
-        run_before_global: false,
-        handler: async |_| (),
-    };
+    let route = Route::new(vec![], vec![], async |_| ());
 
     let output = Arc::new(Mutex::new(Vec::new()));
 
