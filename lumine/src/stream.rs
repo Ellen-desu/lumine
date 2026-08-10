@@ -31,7 +31,7 @@ pub trait Stream: Send {
     ///
     /// This value is used to set the `Content-Length` header in the response.
     /// If `None` is returned, the response will be sent using `Transfer-Encoding: chunked`.
-    fn size_hint(&self) -> Option<usize> {
+    fn size_hint(&self) -> Option<u64> {
         None
     }
 }
@@ -44,7 +44,7 @@ impl<T: Stream + ?Sized> Stream for Box<T> {
     fn headers_hint(&self) -> Option<&HeaderMap> {
         (**self).headers_hint()
     }
-    fn size_hint(&self) -> Option<usize> {
+    fn size_hint(&self) -> Option<u64> {
         (**self).size_hint()
     }
 }
@@ -62,7 +62,7 @@ impl Stream for crate::filestream::FileStream {
         Some(&self.headers)
     }
 
-    fn size_hint(&self) -> Option<usize> {
+    fn size_hint(&self) -> Option<u64> {
         Some(self.length)
     }
 }

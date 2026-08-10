@@ -7,8 +7,8 @@ struct StaticStream(Cursor<Vec<u8>>);
 
 #[async_trait::async_trait]
 impl Stream for StaticStream {
-    fn size_hint(&self) -> Option<usize> {
-        Some(self.0.get_ref().len())
+    fn size_hint(&self) -> Option<u64> {
+        Some(self.0.get_ref().len() as u64)
     }
     fn headers_hint(&self) -> Option<&HeaderMap> {
         None

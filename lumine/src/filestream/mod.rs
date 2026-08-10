@@ -28,7 +28,7 @@ use tokio::{fs::File, io::BufReader};
 pub struct FileStream {
     pub(crate) reader: BufReader<File>,
     pub(crate) headers: HeaderMap,
-    pub(crate) length: usize,
+    pub(crate) length: u64,
 }
 
 impl FileStream {
@@ -64,7 +64,7 @@ impl FileStream {
             }
         };
 
-        let length = file.metadata().await?.len() as usize;
+        let length = file.metadata().await?.len();
 
         let reader = BufReader::new(file);
 
