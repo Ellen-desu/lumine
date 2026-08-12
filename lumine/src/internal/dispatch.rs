@@ -34,11 +34,7 @@ pub async fn dispatch_request(mut request: Request, app: &Arc<Lumine<Ready>>) ->
 
             chain.extend(iter);
 
-            let next = Next {
-                middlewares: chain,
-                route: Arc::clone(route),
-                index: 0,
-            };
+            let next = Next::new(chain, route.clone());
 
             match tokio::spawn(async { next.run(request).await }).await {
                 Ok(response) => return response,
