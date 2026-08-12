@@ -5,7 +5,7 @@
 
 use crate::{
     application::{lumine::Lumine, states::Ready},
-    middleware::{Middleware, next::Next},
+    middleware::next::Next,
     request::Request,
     response::{Response, into_response::IntoResponse},
 };
@@ -35,8 +35,8 @@ pub async fn dispatch_request(mut request: Request, app: &Arc<Lumine<Ready>>) ->
             chain.extend(iter);
 
             let next = Next {
-                middlewares: Arc::<[Arc<dyn Middleware>]>::from(chain),
-                route: route.clone(),
+                middlewares: chain,
+                route: Arc::clone(route),
                 index: 0,
             };
 

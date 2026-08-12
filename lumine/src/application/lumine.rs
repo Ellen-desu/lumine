@@ -248,7 +248,7 @@ impl Lumine<Ready> {
 
     /// Returns the route and parameters that matches the given URI, if one exists.
     #[doc(hidden)]
-    pub fn get_route(&self, path: &str) -> Option<(Arc<dyn RouteEntry>, Params)> {
+    pub fn get_route(&self, path: &str) -> Option<(&Arc<dyn RouteEntry>, Params)> {
         let path = if path == "/" {
             Vec::new()
         } else {
@@ -257,7 +257,7 @@ impl Lumine<Ready> {
 
         for route in &self.routes {
             if let Some(params) = route.matches(&path) {
-                return Some((Arc::clone(route), params));
+                return Some((route, params));
             }
         }
 
