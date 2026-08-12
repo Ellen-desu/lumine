@@ -15,13 +15,16 @@ use std::sync::Arc;
 /// Dispatches a request to the appropriate route.
 ///
 /// This function finds the matching route, prepares the middleware chain,
-/// and executes it. It also includes panic handling to ensure the application
-/// doesn't crash on handler errors.
+/// and executes it.
 pub async fn dispatch_request(mut request: Request, app: &Arc<Lumine<Ready>>) -> Response {
-    let status = match app.get_route(request.uri().path()) {
-        Some((route, params)) => {
-            request.extensions_mut().insert(params);
+    let path = request.uri().path();
 
+    if let Some((route, params)) = app.get_route(path) {
+        request.extensions_mut().insert(params);
+
+        let future = if route.middlewares().is_empty() && app.middlewares.is_empty() {
+            route.call(request)
+        } else {
             let mut chain = Vec::with_capacity(route.middlewares().len() + app.middlewares.len());
 
             // Choose between route or global middleware which takes precedence
@@ -36,13 +39,11 @@ pub async fn dispatch_request(mut request: Request, app: &Arc<Lumine<Ready>>) ->
 
             let next = Next::new(chain, route.clone());
 
-            match tokio::spawn(async { next.run(request).await }).await {
-                Ok(response) => return response,
-                _ => StatusCode::INTERNAL_SERVER_ERROR,
-            }
-        }
-        _ => StatusCode::NOT_FOUND,
-    };
+            Box::pin(next.run(request))
+        };
 
-    status.into_response()
+        future.await
+    } else {
+        StatusCode::NOT_FOUND.into_response()
+    }
 }
