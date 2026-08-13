@@ -49,12 +49,15 @@ pub async fn handle_connection<Rw: AsyncRead + AsyncWrite + Unpin>(
 
         let (mut parts, mut body) = dispatch::dispatch_request(request, &app).await.into_parts();
 
+        let headers_mut = &mut parts.headers;
+        headers_mut.reserve(8);
+
         let should_close = framing.connection.is_close()
             || parts.status.is_server_error()
             || parts.status.is_client_error();
 
         headers::set_headers(
-            &mut parts.headers,
+            headers_mut,
             parts.status,
             &mut body,
             should_close,
