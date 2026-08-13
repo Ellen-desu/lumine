@@ -12,6 +12,7 @@ http = "1.4"
 lumine = { version = "0", path = "../lumine"}
 tokio = { version = "1.52", features = ["macros", "rt"] }
 async-trait = "0.1"
+bytes = "1.12"
 
 [[test]]
 name = "routing"

@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use lumine::{internal::reader::read_request, prelude::*};
 use tokio::io::BufReader;
 
@@ -52,7 +53,7 @@ async fn post_request_with_body() {
         headers.get("content-length"),
         Some(&HeaderValue::from_static("13"))
     );
-    assert_eq!(request.body(), b"Hello, World!");
+    assert_eq!(request.body(), &Bytes::from_static(b"Hello, World!"));
 }
 
 #[tokio::test]

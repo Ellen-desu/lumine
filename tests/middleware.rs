@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use lumine::{prelude::*, routing::route::Route};
 use std::sync::{Arc, Mutex};
 
@@ -34,7 +35,7 @@ async fn calling_middleware_and_ordering() {
     let middlewares: Vec<Arc<dyn Middleware>> = vec![mw1, mw2];
 
     let next = Next::new(middlewares, Arc::new(route));
-    let request = http::Request::new(Vec::new());
+    let request = http::Request::new(Bytes::new());
 
     next.run(request).await;
 

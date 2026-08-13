@@ -4,7 +4,12 @@
 //! to be converted into a [`DynBody`]. This is used to make returning
 //! different types of content from handlers more ergonomic.
 
-use crate::body::{Body, DynBody};
+use bytes::{Bytes, BytesMut};
+
+use crate::{
+    body::{Body, DynBody},
+    stream::Stream,
+};
 
 /// Converts a value into an HTTP-compatible body.
 ///
@@ -26,37 +31,44 @@ pub trait IntoBody {
 }
 
 impl IntoBody for &'static str {
-    /// Converts a string literal into a body containing its UTF-8 bytes.
     fn into_body(self) -> DynBody {
-        Body::Bytes(self.as_bytes().to_vec())
+        Body::Bytes(Bytes::from_static(self.as_bytes()))
     }
 }
 
-impl IntoBody for &[u8] {
-    /// Converts a byte slice into a body by copying the bytes.
+impl IntoBody for &'static [u8] {
     fn into_body(self) -> DynBody {
-        Body::Bytes(self.to_vec())
+        Body::Bytes(Bytes::from_static(self))
     }
 }
 
-impl IntoBody for String {
-    /// Consumes the `String` and converts it into a body containing its bytes.
+impl IntoBody for Box<[u8]> {
     fn into_body(self) -> DynBody {
-        Body::Bytes(self.into_bytes())
+        Body::Bytes(Bytes::from(self))
     }
 }
 
-impl IntoBody for Vec<u8> {
-    /// Consumes the `Vec<u8>` and uses it directly as the body.
+impl IntoBody for Bytes {
     fn into_body(self) -> DynBody {
         Body::Bytes(self)
     }
 }
 
-impl IntoBody for &String {
-    /// Converts a reference to a `String` into a body by copying its bytes.
+impl IntoBody for BytesMut {
     fn into_body(self) -> DynBody {
-        Body::Bytes(self.as_bytes().to_vec())
+        Body::Bytes(self.freeze())
+    }
+}
+
+impl IntoBody for Vec<u8> {
+    fn into_body(self) -> DynBody {
+        Body::Bytes(Bytes::from(self))
+    }
+}
+
+impl IntoBody for String {
+    fn into_body(self) -> DynBody {
+        Body::Bytes(Bytes::from(self))
     }
 }
 
@@ -67,9 +79,7 @@ impl IntoBody for DynBody {
     }
 }
 
-#[cfg(feature = "filestream")]
-impl IntoBody for crate::filestream::FileStream {
-    /// Converts a `FileStream` into a stream-based body.
+impl<S: Stream + 'static> IntoBody for S {
     fn into_body(self) -> DynBody {
         Body::Stream(Box::new(self))
     }

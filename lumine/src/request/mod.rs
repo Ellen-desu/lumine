@@ -8,14 +8,16 @@ pub mod from_request;
 pub mod params;
 pub mod query;
 
+use bytes::Bytes;
+
 #[doc(inline)]
 pub use self::{from_request::FromRequest, params::Params, query::Query};
 
 /// The request type used throughout Lumine.
 ///
-/// This is an alias for `http::Request<Vec<u8>>`, binding the
-/// request body type to [`Vec<u8>`] definition.
+/// This is an alias for `http::Request<Bytes>`, binding the
+/// request body type to [`Bytes`] definition.
 ///
 /// Using a type alias keeps function signatures concise and
 /// ensures consistent request handling across the codebase.
-pub type Request = http::Request<Vec<u8>>;
+pub type Request = http::Request<Bytes>;

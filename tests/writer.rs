@@ -1,5 +1,6 @@
 use std::io::Cursor;
 
+use bytes::Bytes;
 use lumine::{internal::writer::write_response, prelude::*};
 use tokio::io::AsyncReadExt;
 
@@ -38,7 +39,7 @@ impl Stream for ChunkedStream {
 
 #[tokio::test]
 async fn body_bytes() {
-    let response = Response::new(Body::Bytes("Hello, World!".as_bytes().to_vec()));
+    let response = Response::new(Body::Bytes(Bytes::from_static("Hello, World!".as_bytes())));
     let mut cursor = Cursor::new(Vec::new());
     let timeouts = Timeouts::default();
 
@@ -53,7 +54,7 @@ async fn body_bytes() {
 
 #[tokio::test]
 async fn body_empty() {
-    let response = Response::new(Body::Bytes(Vec::new()));
+    let response = Response::new(Body::Bytes(Bytes::new()));
     let mut cursor = Cursor::new(Vec::new());
     let timeouts = Timeouts::default();
 

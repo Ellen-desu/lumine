@@ -9,6 +9,8 @@
 
 pub mod into_body;
 
+use bytes::Bytes;
+
 #[doc(inline)]
 pub use self::into_body::IntoBody;
 
@@ -19,7 +21,7 @@ pub enum Body<S: Stream> {
     /// An empty response body.
     Empty,
     /// A response body containing buffered bytes.
-    Bytes(Vec<u8>),
+    Bytes(Bytes),
     /// A response body that streams data using the [`Stream`] trait.
     Stream(S),
 }
@@ -39,7 +41,7 @@ impl<S: Stream> Body<S> {
     }
 
     /// Returns the body as bytes, if it is a `Bytes` variant.
-    pub fn into_bytes(self) -> Option<Vec<u8>> {
+    pub fn into_bytes(self) -> Option<Bytes> {
         match self {
             Self::Bytes(bytes) => Some(bytes),
             _ => None,
@@ -52,7 +54,7 @@ impl<S: Stream> Body<S> {
     }
 
     /// Returns a `Bytes` variant of the body.
-    pub fn from_bytes(bytes: impl Into<Vec<u8>>) -> Self {
+    pub fn from_bytes(bytes: impl Into<Bytes>) -> Self {
         Self::Bytes(bytes.into())
     }
 
