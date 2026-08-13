@@ -5,7 +5,6 @@
 //! different types of content from handlers more ergonomic.
 
 use crate::body::{Body, DynBody};
-use std::str::Bytes;
 
 /// Converts a value into an HTTP-compatible body.
 ///
@@ -58,13 +57,6 @@ impl IntoBody for &String {
     /// Converts a reference to a `String` into a body by copying its bytes.
     fn into_body(self) -> DynBody {
         Body::Bytes(self.as_bytes().to_vec())
-    }
-}
-
-impl IntoBody for Bytes<'_> {
-    /// Converts a string byte iterator into a body by collecting its bytes.
-    fn into_body(self) -> DynBody {
-        Body::Bytes(self.collect())
     }
 }
 
