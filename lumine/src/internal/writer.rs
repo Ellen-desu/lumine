@@ -4,7 +4,8 @@
 //! supporting both static and chunked body writing.
 
 use crate::{application::Timeouts, body::Body, response::Response, stream::Stream};
-use std::io::Write;
+use bytes::{BufMut, BytesMut};
+use std::io::{Cursor, Write};
 use tokio::io::{AsyncWrite, AsyncWriteExt, BufWriter};
 
 /// Writes an HTTP response to the provided TCP stream.
@@ -17,23 +18,27 @@ pub async fn write_response<W: AsyncWrite + Unpin>(
     timeouts: &Timeouts,
 ) -> std::io::Result<()> {
     let mut writer = BufWriter::new(stream);
-    let mut buffer = Vec::with_capacity(512);
+    let mut buffer = BytesMut::with_capacity(512);
 
-    // Status line
-    let version = response.version();
     let status = response.status();
 
-    // Write the status line to the stream
-    write!(buffer, "{version:?} {status}\r\n")?;
+    buffer.put_slice(b"HTTP/1.1 ");
+    buffer.put_slice(status.as_str().as_bytes());
+    buffer.put_u8(b' ');
+    buffer.put_slice(status.canonical_reason().unwrap_or("Unknown").as_bytes());
+    buffer.put_slice(b"\r\n");
 
     // Headers
     for (name, value) in response.headers() {
         // Write each header to the stream
-        write!(buffer, "{name}: {}\r\n", value.to_str().unwrap_or_default())?;
+        buffer.put_slice(name.as_str().as_bytes());
+        buffer.put_slice(b": ");
+        buffer.put_slice(value.as_bytes());
+        buffer.put_slice(b"\r\n");
     }
 
     // End of headers
-    buffer.extend_from_slice(b"\r\n");
+    buffer.put_slice(b"\r\n");
 
     tokio::time::timeout(timeouts.response_write, writer.write_all(&buffer)).await??;
 
@@ -78,7 +83,7 @@ pub async fn write_body_chunked<S: Stream, W: AsyncWrite + Unpin>(
         };
 
         let len = {
-            let mut cursor = std::io::Cursor::new(&mut chunk_header[..]);
+            let mut cursor = Cursor::new(&mut chunk_header[..]);
             write!(cursor, "{:x}\r\n", n)?;
             cursor.position() as usize
         };
