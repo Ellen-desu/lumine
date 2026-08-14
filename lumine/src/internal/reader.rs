@@ -6,15 +6,14 @@ use crate::{
 };
 use bytes::{Bytes, BytesMut};
 use http::HeaderMap;
-use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncReadExt, BufReader};
+use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncReadExt};
 
 /// This function reads the request line, headers, and body from the stream
 /// and constructs a [`Request`] object.
-pub async fn read_request<R: AsyncRead + Unpin>(
-    stream: &mut R,
+pub async fn read_request<R: AsyncBufRead + Unpin>(
+    reader: &mut R,
     limits: &Limits,
 ) -> Result<Option<(Request, Framing)>, Error> {
-    let mut reader = BufReader::new(stream);
     let mut buffer = String::new();
 
     // Request line
