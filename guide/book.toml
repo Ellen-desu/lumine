@@ -7,4 +7,4 @@ language = "en"
 edition = "2024"
 
 [output.html]
-git-repository-url = "https://github.com/Ellen-desu/lumine"
+git-repository-url = "https://github.com/ouzuka-m/lumine"

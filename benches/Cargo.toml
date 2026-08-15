@@ -1,7 +1,7 @@
 [package]
 name = "benches"
 description = "Performance testing for Lumine HTTP web server."
-repository = "https://github.com/Ellen-desu/lumine"
+repository = "https://github.com/ouzuka-m/lumine"
 version = "0.0.0"
 publish = false
 edition = "2024"
