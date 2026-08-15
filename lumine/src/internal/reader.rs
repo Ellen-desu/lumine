@@ -60,8 +60,6 @@ pub async fn read_request<R: AsyncBufRead + Unpin>(
                 return Ok(None);
             }
 
-            dbg!(&body);
-
             body.freeze()
         }
     };
