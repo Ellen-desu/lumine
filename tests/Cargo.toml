@@ -27,14 +27,6 @@ name = "dispatch"
 path = "dispatch.rs"
 
 [[test]]
-name = "request_line"
-path = "parser/request_line.rs"
-
-[[test]]
-name = "header"
-path = "parser/header.rs"
-
-[[test]]
 name = "reader"
 path = "reader.rs"
 

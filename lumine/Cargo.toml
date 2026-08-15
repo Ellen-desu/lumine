@@ -18,6 +18,7 @@ tokio = { version =  "1.53", features = ["net", "rt", "io-util", "fs", "time", "
 async-trait = "0.1"
 httpdate = "1.0"
 bytes = "1.12"
+memchr = "2.8"
 
 infer = { version = "0.22", optional = true }
 tokio-rustls = { version = "0.26", default-features = false, features = ["aws_lc_rs"], optional = true }

@@ -10,11 +10,11 @@ use crate::{
         states::{Building, Ready},
         timeouts::Timeouts,
     },
-    internal::{connection, parser, validator},
+    internal::{connection, validator},
     middleware::Middleware,
     request::{Request, params::Params},
     response::into_response::IntoResponse,
-    routing::{route::Route, route_entry::RouteEntry},
+    routing::{route::Route, route_entry::RouteEntry, segment::Segment},
 };
 use std::{marker::PhantomData, sync::Arc};
 use tokio::{net::TcpListener, sync::Semaphore};
@@ -162,7 +162,7 @@ impl Lumine<Building> {
         Fut: Future<Output = R> + Send,
         R: IntoResponse,
     {
-        let segments = parser::parse_path(path, &self.limits);
+        let segments = self.path_to_segments(path);
         validator::check_route_duplicates(&self.routes, &segments);
 
         self.routes
@@ -182,13 +182,70 @@ impl Lumine<Building> {
         R: IntoResponse,
         W: Fn(Route<F>) -> Route<F>,
     {
-        let segments = parser::parse_path(path, &self.limits);
+        let segments = self.path_to_segments(path);
         validator::check_route_duplicates(&self.routes, &segments);
 
         let route = with(Route::new(segments, Vec::with_capacity(3), handler));
 
         self.routes.push(Arc::new(route));
         self
+    }
+
+    fn path_to_segments(&self, path: &'static str) -> Vec<Segment> {
+        if path.len() > self.limits.max_path_size {
+            panic!(
+                "Path too large: {} > {}",
+                path.len(),
+                self.limits.max_path_size
+            );
+        }
+
+        if path == "/" {
+            return Vec::new();
+        }
+
+        if !path.starts_with('/') || path.ends_with('/') {
+            panic!("Path must start with a slash and not end with a slash");
+        }
+
+        let mut segments = Vec::with_capacity(self.limits.max_segments_count);
+
+        path.split('/').skip(1).for_each(|s| {
+            if segments.len() >= self.limits.max_segments_count {
+                panic!("Path segment count exceeds limit");
+            }
+
+            match s {
+                ":" => {
+                    panic!("Path parameter must be followed by a name");
+                }
+                _ => {
+                    if segments.last() == Some(&Segment::Wildcard) {
+                        panic!("Wildcard segment must be the last segment");
+                    }
+
+                    if s.is_empty() {
+                        panic!("Path segment must not be empty");
+                    }
+
+                    if segments.contains(&Segment::Param(s.trim_start_matches(':'))) {
+                        panic!("Path parameter must be unique");
+                    }
+
+                    if s.len() > self.limits.max_segment_size {
+                        panic!(
+                            "Path segment too large: {} > {}",
+                            s.len(),
+                            self.limits.max_segment_size
+                        );
+                    }
+                }
+            }
+
+            segments.push(Segment::from(s));
+        });
+
+        segments
     }
 }
 

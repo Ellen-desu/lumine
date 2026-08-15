@@ -1,12 +1,13 @@
 use crate::{
     application::limits::Limits,
     error::Error,
-    internal::{framing::Framing, parser, validator},
-    request::Request,
+    internal::{framing::Framing, validator},
+    request::{Request, query::Query},
 };
 use bytes::{Bytes, BytesMut};
-use http::HeaderMap;
-use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncReadExt};
+use http::{HeaderMap, HeaderName, HeaderValue, Method, Uri, Version};
+use memchr::memmem;
+use tokio::io::{AsyncBufRead, AsyncReadExt};
 
 /// This function reads the request line, headers, and body from the stream
 /// and constructs a [`Request`] object.
@@ -14,35 +15,100 @@ pub async fn read_request<R: AsyncBufRead + Unpin>(
     reader: &mut R,
     limits: &Limits,
 ) -> Result<Option<(Request, Framing)>, Error> {
-    let mut buffer = String::new();
+    let mut buffer = BytesMut::with_capacity(4096);
 
-    // Request line
-    if let Ok(0) = reader.read_line(&mut buffer).await {
-        return Ok(None);
-    }
-
-    let (method, uri, version, query) = parser::parse_request_line(&buffer, limits)?;
-
-    // Headers
-    let mut headers = HeaderMap::with_capacity(16);
-    loop {
-        buffer.clear();
-        if let Ok(0) = reader.read_line(&mut buffer).await {
+    let header_end = loop {
+        if let Ok(0) = reader.read_buf(&mut buffer).await {
             return Ok(None);
         }
 
-        if buffer.trim().is_empty() {
-            break;
+        if let Some(pos) = memmem::find(&buffer, b"\r\n\r\n") {
+            break pos;
         }
+    };
 
-        if headers.len() >= limits.max_headers_count {
+    let request_line_end = memmem::find(&buffer, b"\r\n").ok_or(Error::InvalidRequestLine)?;
+    let (method, uri, version, query) = {
+        let request_line = &buffer[..request_line_end];
+
+        let first = memchr::memchr(b' ', request_line).ok_or(Error::InvalidRequestLine)?;
+
+        let second = memchr::memchr(b' ', &request_line[(first + 1)..])
+            .ok_or(Error::InvalidRequestLine)?
+            + first
+            + 1;
+
+        let method = Method::from_bytes(&request_line[..first])?;
+        let uri = {
+            let bytes = &request_line[(first + 1)..second];
+
+            if bytes.len() > (limits.max_path_size + 1 + limits.max_query_size) {
+                return Err(Error::UriTooLarge);
+            }
+
+            Uri::try_from(bytes)?
+        };
+
+        let version = if &request_line[(second + 1)..] == b"HTTP/1.1" {
+            Version::HTTP_11
+        } else {
+            return Err(Error::HttpVersionNotSupported);
+        };
+
+        let query = if let Some(query_str) = uri.query() {
+            let mut query = Query::with_capacity(8);
+            let mut pairs = 0;
+
+            if query_str.len() > limits.max_query_size {
+                return Err(Error::QueryTooLarge);
+            }
+
+            for (key, value) in form_urlencoded::parse(query_str.as_bytes()).into_owned() {
+                pairs += 1;
+
+                if pairs > limits.max_query_count {
+                    return Err(Error::QueryTooLarge);
+                }
+
+                query.insert(key.into_boxed_str(), value.into_boxed_str());
+            }
+
+            query
+        } else {
+            Query::new()
+        };
+
+        (method, uri, version, query)
+    };
+
+    let headers = {
+        let mut headers = HeaderMap::with_capacity(8);
+
+        let headers_block = &buffer[(request_line_end + 2)..header_end];
+        if headers_block.len() > limits.max_headers_size {
             return Err(Error::HeadersTooLarge);
         }
 
-        let (key, value) = parser::parse_header(&buffer, limits)?;
+        let mut pairs = 0;
+        for line in headers_block.split(|b| *b == b'\n') {
+            pairs += 1;
 
-        headers.append(key, value);
-    }
+            if pairs > limits.max_headers_count {
+                return Err(Error::HeadersTooLarge);
+            }
+
+            let line = line.strip_suffix(b"\r").unwrap_or(line);
+
+            let colon = memchr::memchr(b':', line).ok_or(Error::InvalidHeaders)?;
+
+            let key = HeaderName::from_bytes(&line[..colon])?;
+            let value = HeaderValue::from_bytes(line[colon + 1..].trim_ascii())?;
+
+            headers.append(key, value);
+        }
+
+        headers
+    };
 
     let framing = validator::validate_headers(&headers)?;
 
@@ -53,11 +119,19 @@ pub async fn read_request<R: AsyncBufRead + Unpin>(
                 return Err(Error::BodyTooLarge);
             }
 
-            let mut body = BytesMut::with_capacity(content_length);
-            body.resize(content_length, 0);
+            let body_start = header_end + 4;
+            let buffered_body = &buffer[body_start..];
+            let already_read = buffered_body.len();
 
-            if reader.read_exact(&mut body).await.is_err() {
-                return Ok(None);
+            let mut body = BytesMut::with_capacity(content_length);
+
+            body.extend_from_slice(buffered_body);
+
+            if content_length - already_read > 0 {
+                body.resize(content_length, 0);
+                if reader.read_exact(&mut body[already_read..]).await.is_err() {
+                    return Ok(None);
+                }
             }
 
             body.freeze()
