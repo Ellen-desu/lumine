@@ -1,13 +1,9 @@
 use crate::{
     error::Error,
     internal::framing::{Connection, Framing},
-    routing::{route_entry::RouteEntry, segment::Segment},
 };
 use http::{HeaderMap, header};
-use std::{
-    net::{Ipv4Addr, Ipv6Addr},
-    sync::Arc,
-};
+use std::net::{Ipv4Addr, Ipv6Addr};
 
 /// Validates the headers of an HTTP request and returns a [`Framing`] instance.
 pub fn validate_headers(headers: &HeaderMap) -> Result<Framing, Error> {
@@ -125,11 +121,4 @@ pub fn validate_headers(headers: &HeaderMap) -> Result<Framing, Error> {
         content_length,
         connection: connection.unwrap_or(Connection::KeepAlive),
     })
-}
-
-#[allow(clippy::panic)] // This functions is used at startup
-pub fn check_route_duplicates(routes: &[Arc<dyn RouteEntry>], segments: &[Segment]) {
-    if routes.iter().any(|r| r.is_duplicated(segments)) {
-        panic!("Conflicting routes");
-    }
 }

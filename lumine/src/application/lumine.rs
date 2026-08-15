@@ -10,7 +10,7 @@ use crate::{
         states::{Building, Ready},
         timeouts::Timeouts,
     },
-    internal::{connection, validator},
+    internal::connection,
     middleware::Middleware,
     request::{Request, params::Params},
     response::into_response::IntoResponse,
@@ -163,7 +163,8 @@ impl Lumine<Building> {
         R: IntoResponse,
     {
         let segments = self.path_to_segments(path);
-        validator::check_route_duplicates(&self.routes, &segments);
+
+        self.check_route_duplicates(&segments);
 
         self.routes
             .push(Arc::new(Route::new(segments, Vec::new(), handler)));
@@ -183,7 +184,8 @@ impl Lumine<Building> {
         W: Fn(Route<F>) -> Route<F>,
     {
         let segments = self.path_to_segments(path);
-        validator::check_route_duplicates(&self.routes, &segments);
+
+        self.check_route_duplicates(&segments);
 
         let route = with(Route::new(segments, Vec::with_capacity(3), handler));
 
@@ -246,6 +248,12 @@ impl Lumine<Building> {
         });
 
         segments
+    }
+
+    fn check_route_duplicates(&self, segments: &[Segment]) {
+        if self.routes.iter().any(|r| r.is_duplicated(segments)) {
+            panic!("Conflicting routes");
+        }
     }
 }
 
