@@ -8,6 +8,7 @@
 use crate::{
     body::{Body, into_body::IntoBody},
     error::Error,
+    internal::headers,
     response::Response,
 };
 use http::{HeaderMap, StatusCode};
@@ -148,10 +149,14 @@ impl IntoResponse for Error {
             Error::InvalidRequestLine | Error::InvalidHeaders | Error::RequestTooLarge => {
                 StatusCode::BAD_REQUEST
             }
+            Error::RequestTimeout => StatusCode::REQUEST_TIMEOUT,
             Error::Unimplemented => StatusCode::NOT_IMPLEMENTED,
         };
         let mut response = http::Response::new(Body::Empty);
         *response.status_mut() = status;
+
+        headers::set_connection_close(response.headers_mut());
+
         response
     }
 }

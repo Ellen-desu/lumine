@@ -15,6 +15,8 @@ use http::{
 pub enum Error {
     /// The request size exceeded the allowed limit.
     RequestTooLarge,
+    /// The request timed out before completion.
+    RequestTimeout,
     /// The URI exceeded the allowed size limit.
     UriTooLarge,
     /// The request body exceeded the allowed size limit.

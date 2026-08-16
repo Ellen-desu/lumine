@@ -87,6 +87,10 @@ pub fn set_headers(
     }
 }
 
+pub fn set_connection_close(headers: &mut HeaderMap) {
+    headers.insert(header::CONNECTION, HeaderValue::from_static("close"));
+}
+
 fn insert_content_type(headers: &mut HeaderMap, default: &'static str) {
     headers
         .entry(header::CONTENT_TYPE)

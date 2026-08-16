@@ -5,6 +5,7 @@
 
 use crate::{
     application::{lumine::Lumine, states::Ready},
+    error::Error,
     internal::{dispatch, headers, reader, writer},
     response::into_response::IntoResponse,
 };
@@ -32,7 +33,7 @@ pub async fn handle_connection<Rw: AsyncRead + AsyncWrite + Unpin>(
         .await
         {
             Ok(request_result) => request_result,
-            _ => break,
+            _ => Err(Error::RequestTimeout),
         };
 
         let (request, framing) = match request_result {
