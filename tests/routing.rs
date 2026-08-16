@@ -121,7 +121,7 @@ fn dynamic_route_matching_and_parameters_extraction() {
     assert!(result.is_some());
 
     match result {
-        Some((_, params)) => {
+        Some((_, params, _)) => {
             assert_eq!(params.get("userId"), Some("1"));
             assert_eq!(params.get("postId"), Some("2"));
         }
@@ -140,7 +140,7 @@ fn route_priority_static_vs_dynamic() {
     assert!(result.is_some());
 
     match result {
-        Some((_, params)) => {
+        Some((_, params, _)) => {
             // The result is depends of the order of the routes, it will be error if the order is reversed
             assert!(params.get("id").is_none());
         }

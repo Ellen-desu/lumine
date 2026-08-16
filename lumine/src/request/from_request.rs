@@ -1,6 +1,6 @@
 use crate::request::{
     Request,
-    extensions::{addr::Addr, params::Params, query::Query},
+    extensions::{addr::Addr, params::Params, query::Query, remainder::Remainder},
 };
 
 pub trait FromRequest {
@@ -32,5 +32,14 @@ impl FromRequest for Addr {
         req.extensions()
             .get::<Self>()
             .expect("address is always attached")
+    }
+}
+
+impl FromRequest for Remainder {
+    /// Retrieves the remainder of the request path from the request extensions.
+    fn from_request(req: &Request) -> &Self {
+        req.extensions()
+            .get::<Self>()
+            .expect("remainder is always attached")
     }
 }

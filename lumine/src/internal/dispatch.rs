@@ -19,8 +19,9 @@ use std::sync::Arc;
 pub async fn dispatch_request(mut request: Request, app: &Arc<Lumine<Ready>>) -> Response {
     let path = request.uri().path();
 
-    if let Some((route, params)) = app.get_route(path) {
+    if let Some((route, params, remainder)) = app.get_route(path) {
         request.extensions_mut().insert(params);
+        request.extensions_mut().insert(remainder);
 
         let future = if route.middlewares().is_empty() && app.middlewares.is_empty() {
             route.call(request)

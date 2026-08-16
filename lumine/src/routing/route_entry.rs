@@ -8,7 +8,10 @@ use std::sync::Arc;
 
 use crate::{
     middleware::Middleware,
-    request::{Request, extensions::params::Params},
+    request::{
+        Request,
+        extensions::{Remainder, params::Params},
+    },
     response::{Response, into_response::IntoResponse},
     routing::{route::Route, segment::Segment},
 };
@@ -77,7 +80,7 @@ pub trait RouteEntry: Send + Sync {
     ///
     /// This method performs pure matching logic and does not
     /// invoke the route handler.
-    fn matches(&self, path_parts: &[&str]) -> Option<Params>;
+    fn matches(&self, path_parts: &[&str]) -> Option<(Params, Remainder)>;
 
     /// Determines whether this route conflicts with another route
     /// using the given path pattern.
@@ -115,7 +118,7 @@ where
     Fut: Future<Output = R> + Send,
     R: IntoResponse,
 {
-    fn matches(&self, path_parts: &[&str]) -> Option<Params> {
+    fn matches(&self, path_parts: &[&str]) -> Option<(Params, Remainder)> {
         let wildcard = self.segments.ends_with(&[Segment::Wildcard]);
         if (!wildcard && path_parts.len() != self.segments.len())
             || (wildcard && path_parts.len() < self.segments.len())
@@ -124,8 +127,9 @@ where
         }
 
         let mut params = Params::with_capacity(4);
+        let mut remainder = Remainder::new();
 
-        for (segment, part) in self.segments.iter().zip(path_parts) {
+        for (i, (segment, part)) in self.segments.iter().zip(path_parts).enumerate() {
             match segment {
                 Segment::Static(s) => {
                     if s != part {
@@ -135,15 +139,21 @@ where
                 Segment::Param(param_name) => {
                     params.insert(param_name, part.to_string().into_boxed_str());
                 }
-                Segment::Wildcard => break,
+                Segment::Wildcard => {
+                    remainder = Remainder::from(path_parts[i..].join("/").into_boxed_str());
+                    break;
+                }
             }
         }
 
-        Some(if params.is_empty() {
-            Params::new()
-        } else {
-            params
-        })
+        Some((
+            if params.is_empty() {
+                Params::new()
+            } else {
+                params
+            },
+            remainder,
+        ))
     }
     fn middlewares(&self) -> &[Arc<dyn Middleware>] {
         &self.middlewares

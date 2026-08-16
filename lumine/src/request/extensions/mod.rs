@@ -12,13 +12,15 @@
 //! | [`Addr`] | The remote IP address of the connected client. |
 //! | [`Params`] | Dynamic path segments extracted during route matching. |
 //! | [`Query`] | Query-string key/value pairs parsed from the request URI. |
+//! | [`Remainder`] | The remaining path after wildcard segments have been matched. |
 //!
-//! All three types are re-exported at the crate root for convenience, so you
+//! All four types are re-exported at the crate root for convenience, so you
 //! generally do not need to reference this module directly.
 
 pub mod addr;
 pub mod params;
 pub mod query;
+pub mod remainder;
 
 #[doc(inline)]
-pub use self::{addr::Addr, params::Params, query::Query};
+pub use self::{addr::Addr, params::Params, query::Query, remainder::Remainder};

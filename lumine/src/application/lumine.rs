@@ -12,7 +12,10 @@ use crate::{
     },
     internal::connection,
     middleware::Middleware,
-    request::{Request, extensions::params::Params},
+    request::{
+        Request,
+        extensions::{Remainder, params::Params},
+    },
     response::into_response::IntoResponse,
     routing::{route::Route, route_entry::RouteEntry, segment::Segment},
 };
@@ -314,7 +317,7 @@ impl Lumine<Ready> {
 
     /// Returns the route and parameters that matches the given URI, if one exists.
     #[doc(hidden)]
-    pub fn get_route(&self, path: &str) -> Option<(&Arc<dyn RouteEntry>, Params)> {
+    pub fn get_route(&self, path: &str) -> Option<(&Arc<dyn RouteEntry>, Params, Remainder)> {
         let path = if path == "/" {
             Vec::new()
         } else {
@@ -322,8 +325,8 @@ impl Lumine<Ready> {
         };
 
         for route in &self.routes {
-            if let Some(params) = route.matches(&path) {
-                return Some((route, params));
+            if let Some((params, remainder)) = route.matches(&path) {
+                return Some((route, params, remainder));
             }
         }
 

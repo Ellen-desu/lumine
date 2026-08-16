@@ -11,7 +11,7 @@ use bytes::Bytes;
 
 #[doc(inline)]
 pub use self::{
-    extensions::{addr::Addr, params::Params, query::Query},
+    extensions::{addr::Addr, params::Params, query::Query, remainder::Remainder},
     from_request::FromRequest,
 };
 
