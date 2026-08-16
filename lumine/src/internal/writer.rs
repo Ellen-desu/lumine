@@ -6,7 +6,7 @@
 use crate::{application::Timeouts, body::Body, response::Response, stream::Stream};
 use bytes::{BufMut, BytesMut};
 use std::io::{Cursor, Write};
-use tokio::io::{AsyncWrite, AsyncWriteExt, BufWriter};
+use tokio::io::{AsyncWrite, AsyncWriteExt};
 
 /// Writes an HTTP response to the provided TCP stream.
 ///
@@ -17,7 +17,6 @@ pub async fn write_response<W: AsyncWrite + Unpin>(
     stream: &mut W,
     timeouts: &Timeouts,
 ) -> std::io::Result<()> {
-    let mut writer = BufWriter::new(stream);
     let mut buffer = BytesMut::with_capacity(512);
 
     let status = response.status();
@@ -40,26 +39,26 @@ pub async fn write_response<W: AsyncWrite + Unpin>(
     // End of headers
     buffer.put_slice(b"\r\n");
 
-    tokio::time::timeout(timeouts.response_write, writer.write_all(&buffer)).await??;
+    tokio::time::timeout(timeouts.response_write, stream.write_all(&buffer)).await??;
 
     // Write body to the stream
     match response.into_body() {
         Body::Bytes(bytes) => {
-            tokio::time::timeout(timeouts.response_write, writer.write_all(&bytes)).await??;
+            tokio::time::timeout(timeouts.response_write, stream.write_all(&bytes)).await??;
         }
         Body::Stream(mut bytes_stream) => {
             let mut buffer = [0u8; 8192];
 
             if bytes_stream.size_hint().is_some() {
-                write_body_static(&mut writer, &mut buffer, &mut bytes_stream, timeouts).await?;
+                write_body_static(stream, &mut buffer, &mut bytes_stream, timeouts).await?;
             } else {
-                write_body_chunked(&mut writer, &mut buffer, &mut bytes_stream, timeouts).await?;
+                write_body_chunked(stream, &mut buffer, &mut bytes_stream, timeouts).await?;
             }
         }
         _ => {}
     };
 
-    tokio::time::timeout(timeouts.response_write, writer.flush()).await??;
+    tokio::time::timeout(timeouts.response_write, stream.flush()).await??;
 
     Ok(())
 }

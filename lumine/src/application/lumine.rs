@@ -270,6 +270,8 @@ impl Lumine<Ready> {
             if let Ok((stream, _)) = listener.accept().await
                 && let Ok(permit) = Arc::clone(&semaphore).acquire_owned().await
             {
+                let _ = stream.set_nodelay(true);
+
                 let app = Arc::clone(&app);
 
                 tokio::spawn(async move {
@@ -295,6 +297,8 @@ impl Lumine<Ready> {
             if let Ok((stream, _)) = listener.accept().await
                 && let Ok(permit) = Arc::clone(&semaphore).acquire_owned().await
             {
+                let _ = stream.set_nodelay(true);
+
                 let app = Arc::clone(&app);
                 let acceptor = Arc::clone(&acceptor);
 
