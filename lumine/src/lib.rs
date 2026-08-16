@@ -32,7 +32,7 @@ pub use crate::{
     application::{Limits, Lumine, Timeouts},
     body::{Body, DynBody, IntoBody},
     middleware::{Middleware, Next},
-    request::{FromRequest, Params, Query, Request},
+    request::{Addr, FromRequest, Params, Query, Request},
     response::{IntoResponse, Response},
     stream::Stream,
 };

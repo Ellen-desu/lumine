@@ -12,7 +12,7 @@ use crate::{
     },
     internal::connection,
     middleware::Middleware,
-    request::{Request, params::Params},
+    request::{Request, extensions::params::Params},
     response::into_response::IntoResponse,
     routing::{route::Route, route_entry::RouteEntry, segment::Segment},
 };
@@ -267,14 +267,14 @@ impl Lumine<Ready> {
         let app = Arc::new(self);
 
         loop {
-            if let Ok((stream, _)) = listener.accept().await {
+            if let Ok((stream, addr)) = listener.accept().await {
                 let _ = stream.set_nodelay(true);
 
                 let app = Arc::clone(&app);
                 let semaphore = Arc::clone(&semaphore);
 
                 tokio::spawn(async move {
-                    connection::handle_connection(app, stream, semaphore).await;
+                    connection::handle_connection(app, stream, addr.ip(), semaphore).await;
                 });
             }
         }
@@ -292,7 +292,7 @@ impl Lumine<Ready> {
         let acceptor = Arc::new(tokio_rustls::TlsAcceptor::from(Arc::new(config)));
 
         loop {
-            if let Ok((stream, _)) = listener.accept().await {
+            if let Ok((stream, addr)) = listener.accept().await {
                 let _ = stream.set_nodelay(true);
 
                 let app = Arc::clone(&app);
@@ -305,7 +305,7 @@ impl Lumine<Ready> {
                         tokio::time::timeout(app.timeouts.tls_handshake, acceptor.accept(stream))
                             .await
                     {
-                        connection::handle_connection(app, tls_stream, semaphore).await;
+                        connection::handle_connection(app, tls_stream, addr.ip(), semaphore).await;
                     }
                 });
             }

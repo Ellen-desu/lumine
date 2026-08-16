@@ -7,10 +7,11 @@ use crate::{
     application::{lumine::Lumine, states::Ready},
     error::Error,
     internal::{dispatch, headers, reader, writer},
+    request::extensions::addr::Addr,
     response::into_response::IntoResponse,
 };
 use http::Method;
-use std::sync::Arc;
+use std::{net::IpAddr, sync::Arc};
 use tokio::{
     io::{AsyncRead, AsyncWrite, BufStream},
     sync::Semaphore,
@@ -24,6 +25,7 @@ use tokio::{
 pub async fn handle_connection<Rw: AsyncRead + AsyncWrite + Unpin>(
     app: Arc<Lumine<Ready>>,
     stream: Rw,
+    addr: IpAddr,
     semaphore: Arc<Semaphore>,
 ) {
     let timeouts = &app.timeouts;
@@ -52,7 +54,11 @@ pub async fn handle_connection<Rw: AsyncRead + AsyncWrite + Unpin>(
         };
 
         let (request, framing) = match request_result {
-            Ok(Some((request, framing))) => (request, framing),
+            Ok(Some((mut request, framing))) => {
+                request.extensions_mut().insert(Addr(addr));
+
+                (request, framing)
+            }
             // Client disconnected
             Ok(None) => break,
             Err(error) => {

@@ -2,7 +2,7 @@ use crate::{
     application::limits::Limits,
     error::Error,
     internal::{framing::Framing, validator},
-    request::{Request, query::Query},
+    request::{Request, extensions::query::Query},
 };
 use bytes::{Bytes, BytesMut};
 use http::{HeaderMap, HeaderName, HeaderValue, Method, Uri, Version};

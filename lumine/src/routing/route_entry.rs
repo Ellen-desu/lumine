@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use crate::{
     middleware::Middleware,
-    request::{Request, params::Params},
+    request::{Request, extensions::params::Params},
     response::{Response, into_response::IntoResponse},
     routing::{route::Route, segment::Segment},
 };

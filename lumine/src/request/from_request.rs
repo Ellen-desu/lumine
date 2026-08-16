@@ -1,4 +1,7 @@
-use crate::request::{Request, params::Params, query::Query};
+use crate::request::{
+    Request,
+    extensions::{addr::Addr, params::Params, query::Query},
+};
 
 pub trait FromRequest {
     /// Retrieves a value from the request.
@@ -20,5 +23,14 @@ impl FromRequest for Query {
         req.extensions()
             .get::<Self>()
             .expect("query parameters are always attached")
+    }
+}
+
+impl FromRequest for Addr {
+    /// Retrieves query parameters from the request extensions.
+    fn from_request(req: &Request) -> &Self {
+        req.extensions()
+            .get::<Self>()
+            .expect("address is always attached")
     }
 }
