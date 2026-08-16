@@ -149,6 +149,7 @@ impl IntoResponse for Error {
             Error::InvalidRequestLine | Error::InvalidHeaders | Error::RequestTooLarge => {
                 StatusCode::BAD_REQUEST
             }
+            Error::TooManyConnections => StatusCode::TOO_MANY_REQUESTS,
             Error::RequestTimeout => StatusCode::REQUEST_TIMEOUT,
             Error::Unimplemented => StatusCode::NOT_IMPLEMENTED,
         };

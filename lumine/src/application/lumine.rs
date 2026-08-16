@@ -267,16 +267,14 @@ impl Lumine<Ready> {
         let app = Arc::new(self);
 
         loop {
-            if let Ok((stream, _)) = listener.accept().await
-                && let Ok(permit) = Arc::clone(&semaphore).acquire_owned().await
-            {
+            if let Ok((stream, _)) = listener.accept().await {
                 let _ = stream.set_nodelay(true);
 
                 let app = Arc::clone(&app);
+                let semaphore = Arc::clone(&semaphore);
 
                 tokio::spawn(async move {
-                    let _permit = permit;
-                    connection::handle_connection(app, stream).await;
+                    connection::handle_connection(app, stream, semaphore).await;
                 });
             }
         }
@@ -294,12 +292,12 @@ impl Lumine<Ready> {
         let acceptor = Arc::new(tokio_rustls::TlsAcceptor::from(Arc::new(config)));
 
         loop {
-            if let Ok((stream, _)) = listener.accept().await
-                && let Ok(permit) = Arc::clone(&semaphore).acquire_owned().await
-            {
+            if let Ok((stream, _)) = listener.accept().await {
                 let _ = stream.set_nodelay(true);
 
                 let app = Arc::clone(&app);
+                let semaphore = Arc::clone(&semaphore);
+
                 let acceptor = Arc::clone(&acceptor);
 
                 tokio::spawn(async move {
@@ -307,8 +305,7 @@ impl Lumine<Ready> {
                         tokio::time::timeout(app.timeouts.tls_handshake, acceptor.accept(stream))
                             .await
                     {
-                        let _permit = permit;
-                        connection::handle_connection(app, tls_stream).await;
+                        connection::handle_connection(app, tls_stream, semaphore).await;
                     }
                 });
             }

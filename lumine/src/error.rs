@@ -13,6 +13,8 @@ use http::{
 /// Represents errors that can occur during the processing of a request.
 #[derive(Debug)]
 pub enum Error {
+    /// Too many connections are open.
+    TooManyConnections,
     /// The request size exceeded the allowed limit.
     RequestTooLarge,
     /// The request timed out before completion.

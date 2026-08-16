@@ -11,7 +11,10 @@ use crate::{
 };
 use http::Method;
 use std::sync::Arc;
-use tokio::io::{AsyncRead, AsyncWrite, BufStream};
+use tokio::{
+    io::{AsyncRead, AsyncWrite, BufStream},
+    sync::Semaphore,
+};
 
 /// Handles an incoming TCP connection loop.
 ///
@@ -21,9 +24,21 @@ use tokio::io::{AsyncRead, AsyncWrite, BufStream};
 pub async fn handle_connection<Rw: AsyncRead + AsyncWrite + Unpin>(
     app: Arc<Lumine<Ready>>,
     stream: Rw,
+    semaphore: Arc<Semaphore>,
 ) {
     let timeouts = &app.timeouts;
     let mut stream = BufStream::new(stream);
+
+    let Ok(_permit) = semaphore.try_acquire_owned() else {
+        let _ = writer::write_response(
+            Error::TooManyConnections.into_response(),
+            &mut stream,
+            timeouts,
+        )
+        .await;
+
+        return;
+    };
 
     loop {
         let request_result = match tokio::time::timeout(
