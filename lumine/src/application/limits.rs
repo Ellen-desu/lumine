@@ -10,6 +10,8 @@
 pub struct Limits {
     /// Maximum number of connections allowed.
     pub(crate) max_connections: usize,
+    /// Maximum size of the request size in bytes.
+    pub(crate) max_request_size: usize,
     /// Maximum size of the request path.
     pub(crate) max_path_size: usize,
     /// Maximum total size of query parameters in bytes.
@@ -40,6 +42,20 @@ impl Limits {
             "max_connections must be greater than 0"
         );
         self.max_connections = max_connections;
+        self
+    }
+
+    /// Sets the maximum size of the request size in bytes.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `max_request_size` is zero.
+    pub fn max_request_size(mut self, max_request_size: usize) -> Self {
+        assert!(
+            max_request_size > 0,
+            "max_request_size must be greater than 0"
+        );
+        self.max_request_size = max_request_size;
         self
     }
 
@@ -152,6 +168,7 @@ impl Default for Limits {
     fn default() -> Self {
         Self {
             max_connections: 10_000,
+            max_request_size: 64 * 1024, // 64 KB
 
             max_path_size: 2048, // 2 KB
 

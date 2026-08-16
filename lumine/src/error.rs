@@ -13,6 +13,8 @@ use http::{
 /// Represents errors that can occur during the processing of a request.
 #[derive(Debug)]
 pub enum Error {
+    /// The request size exceeded the allowed limit.
+    RequestTooLarge,
     /// The URI exceeded the allowed size limit.
     UriTooLarge,
     /// The request body exceeded the allowed size limit.

@@ -145,7 +145,9 @@ impl IntoResponse for Error {
             Error::HeadersTooLarge => StatusCode::REQUEST_HEADER_FIELDS_TOO_LARGE,
             Error::QueryTooLarge => StatusCode::URI_TOO_LONG,
             Error::HttpVersionNotSupported => StatusCode::HTTP_VERSION_NOT_SUPPORTED,
-            Error::InvalidRequestLine | Error::InvalidHeaders => StatusCode::BAD_REQUEST,
+            Error::InvalidRequestLine | Error::InvalidHeaders | Error::RequestTooLarge => {
+                StatusCode::BAD_REQUEST
+            }
             Error::Unimplemented => StatusCode::NOT_IMPLEMENTED,
         };
         let mut response = http::Response::new(Body::Empty);

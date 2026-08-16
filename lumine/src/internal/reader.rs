@@ -22,6 +22,10 @@ pub async fn read_request<R: AsyncBufRead + Unpin>(
             return Ok(None);
         }
 
+        if buffer.len() > limits.max_request_size {
+            return Err(Error::RequestTooLarge);
+        }
+
         if let Some(pos) = memmem::find(&buffer, b"\r\n\r\n") {
             break pos;
         }
