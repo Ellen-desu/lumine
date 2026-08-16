@@ -1,7 +1,11 @@
 //! Query parameter extraction.
 //!
-//! This module provides the [`Query`] struct, which handles the parsing
-//! and storage of query parameters from the request URI.
+//! This module provides the [`Query`] struct, which stores the key/value pairs
+//! parsed from the query string of an incoming request URI (the portion after
+//! `?`).
+//!
+//! Query parameters are populated by Lumine automatically and can be retrieved
+//! inside a handler via the [`FromRequest`](crate::request::FromRequest) trait.
 
 /// Represents query parameters extracted from the request URI.
 ///
@@ -63,17 +67,22 @@
 pub struct Query(Vec<(Box<str>, Vec<Box<str>>)>);
 
 impl Query {
-    /// Creates a new `Query`.
+    /// Creates a new, empty `Query` collection.
     pub fn new() -> Self {
         Self(Vec::new())
     }
 
-    /// Creates a new `Query` with the specified capacity.
+    /// Creates a new, empty `Query` collection with space pre-allocated for
+    /// at least `capacity` unique keys, avoiding reallocations during parsing.
     pub fn with_capacity(capacity: usize) -> Self {
         Self(Vec::with_capacity(capacity))
     }
 
-    /// Inserts a key-value pair into the query.
+    /// Inserts a query parameter key-value pair.
+    ///
+    /// If `key` already exists, `value` is appended to its value list,
+    /// preserving all occurrences (e.g. `?tag=rust&tag=web` results in
+    /// `tag → ["rust", "web"]`). Otherwise a new entry is created.
     pub fn insert(&mut self, key: Box<str>, value: Box<str>) {
         if let Some(values) = self.0.iter_mut().find(|(k, _)| *k == key) {
             values.1.push(value);
@@ -82,7 +91,23 @@ impl Query {
         }
     }
 
-    /// Retrieves the first value for the given key, if present.
+    /// Returns the **first** value associated with `key`, or `None` if the key
+    /// is not present.
+    ///
+    /// When the same key appears multiple times in the query string, use
+    /// [`get_all`](Self::get_all) to retrieve all values.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use lumine::{FromRequest, IntoResponse, Query, Request};
+    ///
+    /// async fn search(req: Request) -> impl IntoResponse {
+    ///     let query = Query::from_request(&req);
+    ///     let term = query.get("q").unwrap_or("(empty)");
+    ///     format!("Searching for: {term}")
+    /// }
+    /// ```
     pub fn get(&self, key: &str) -> Option<&str> {
         self.0
             .iter()
@@ -90,7 +115,26 @@ impl Query {
             .map(|(_, v)| v[0].as_ref())
     }
 
-    /// Retrieves all values for the given key, if present.
+    /// Returns an iterator over **all** values associated with `key`, or `None`
+    /// if the key is not present.
+    ///
+    /// Useful when the same query key is repeated, such as
+    /// `?tag=rust&tag=web`.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use lumine::{FromRequest, IntoResponse, Query, Request};
+    ///
+    /// async fn tags(req: Request) -> impl IntoResponse {
+    ///     let query = Query::from_request(&req);
+    ///     let tags: Vec<&str> = query
+    ///         .get_all("tag")
+    ///         .map(|it| it.collect())
+    ///         .unwrap_or_default();
+    ///     format!("Tags: {}", tags.join(", "))
+    /// }
+    /// ```
     pub fn get_all(&self, key: &str) -> Option<impl Iterator<Item = &str>> {
         self.0
             .iter()
@@ -98,32 +142,39 @@ impl Query {
             .map(|(_, v)| v.iter().map(|v| v.as_ref()))
     }
 
-    /// Returns whether the `Query` contains a value for the given key.
+    /// Returns `true` if the query string contains at least one value for `key`.
     pub fn contains_key(&self, key: &str) -> bool {
         self.0.iter().any(|(k, _)| k.as_ref() == key)
     }
 
-    /// Returns an iterator over the keys in the `Query`.
+    /// Returns an iterator over every unique key in the query string, in the
+    /// order they first appeared.
     pub fn keys(&self) -> impl Iterator<Item = &str> {
         self.0.iter().map(|(k, _)| k.as_ref())
     }
 
-    /// Returns an iterator over the values in the `Query`.
+    /// Returns an iterator over every value list in the query string, in the
+    /// same order as [`keys`](Self::keys). Each item is a slice of all values
+    /// recorded for that key.
     pub fn values(&self) -> impl Iterator<Item = &[Box<str>]> {
         self.0.iter().map(|(_, v)| v.as_slice())
     }
 
-    /// Returns an iterator over the key-value pairs in the `Query`.
+    /// Returns an iterator over every `(key, values)` pair in the query string,
+    /// in the order the keys first appeared.
     pub fn iter(&self) -> impl Iterator<Item = &(Box<str>, Vec<Box<str>>)> {
         self.0.iter()
     }
 
-    /// Returns the number of key-value pairs in the `Query`.
+    /// Returns the number of **unique** keys in the query string.
+    ///
+    /// Note that a key repeated multiple times (e.g. `?tag=rust&tag=web`)
+    /// counts as one.
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
-    /// Returns whether the `Query` is empty.
+    /// Returns `true` if the query string contained no parameters.
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -133,7 +184,9 @@ impl<'a> IntoIterator for &'a Query {
     type Item = &'a (Box<str>, Vec<Box<str>>);
     type IntoIter = std::slice::Iter<'a, (Box<str>, Vec<Box<str>>)>;
 
+    /// Iterates over every `(key, values)` pair in insertion order.
     fn into_iter(self) -> Self::IntoIter {
         self.0.iter()
     }
 }
+
