@@ -104,11 +104,19 @@ fn static_route_matching() {
 
 #[test]
 fn wildcard_route_matching() {
-    let app = Lumine::builder().route("/users/*", async |_| ()).build();
+    let app = Lumine::builder().route("/assets/*", async |_| ()).build();
 
-    assert!(app.get_route("/users").is_none());
-    assert!(app.get_route("/users/1").is_some());
-    assert!(app.get_route("/users/1/posts").is_some());
+    let result = app.get_route("/assets/images/image.jpeg");
+    assert!(result.is_some());
+
+    match result {
+        Some((_, _, rest)) => {
+            assert_eq!(rest.get(), Some("images/image.jpeg"));
+        }
+        None => unreachable!(),
+    }
+
+    assert!(app.get_route("/assets").is_none());
 }
 
 #[test]
