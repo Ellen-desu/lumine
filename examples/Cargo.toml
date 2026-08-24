@@ -50,3 +50,7 @@ path = "6_middleware.rs"
 [[example]]
 name = "tls"
 path = "7_tls.rs"
+
+[[example]]
+name = "static_files"
+path = "8_static_files.rs"
