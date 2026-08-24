@@ -1,9 +1,19 @@
+//! HTTP headers manipulation module.
+//!
+//! This module contains helper functions for setting standard HTTP headers
+//! on outgoing responses, including date, security, and connection headers.
+
 use std::time::SystemTime;
 
 use http::{HeaderMap, HeaderValue, StatusCode, header, response::Parts};
 
 use crate::body::{Body, DynBody};
 
+/// Sets the appropriate headers for an HTTP response based on its status and body.
+///
+/// This function populates headers such as `Content-Length`, `Transfer-Encoding`,
+/// `Date`, and various default security headers. It also modifies the body if the
+/// request method is `HEAD` or if the status code indicates no content.
 pub fn set_headers(
     parts: &mut Parts,
     body: &mut DynBody,
@@ -73,6 +83,10 @@ pub fn set_headers(
     }
 }
 
+/// Sets the `Connection` header on the given `HeaderMap`.
+///
+/// If `close` is `true`, it sets the value to `close`. Otherwise, it sets it
+/// to `keep-alive`.
 pub fn set_connection(headers: &mut HeaderMap, close: bool) {
     headers.insert(
         header::CONNECTION,
@@ -80,6 +94,10 @@ pub fn set_connection(headers: &mut HeaderMap, close: bool) {
     );
 }
 
+/// Sets default security headers on the given `HeaderMap`.
+///
+/// This includes `X-Content-Type-Options: nosniff` and
+/// `Referrer-Policy: strict-origin-when-cross-origin`.
 pub fn set_default_security(headers: &mut HeaderMap) {
     // Browser compatibility: set X-Content-Type-Options to nosniff to prevent MIME type sniffing
     headers.insert(
@@ -94,6 +112,7 @@ pub fn set_default_security(headers: &mut HeaderMap) {
     );
 }
 
+/// Sets the `Date` header on the given `HeaderMap` to the current system time.
 pub fn set_date(headers: &mut HeaderMap) {
     headers.insert(
         header::DATE,
@@ -103,6 +122,7 @@ pub fn set_date(headers: &mut HeaderMap) {
     );
 }
 
+/// Sets the `Content-Type` header if it is not already present.
 pub fn set_content_type(headers: &mut HeaderMap, default: &'static str) {
     headers
         .entry(header::CONTENT_TYPE)

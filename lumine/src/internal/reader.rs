@@ -1,3 +1,8 @@
+//! Request reading and parsing module.
+//!
+//! This module provides functionality to asynchronously read an HTTP request from
+//! a TCP stream, parse the request line and headers, and construct a `Request` object.
+
 use crate::{
     application::limits::Limits,
     error::Error,

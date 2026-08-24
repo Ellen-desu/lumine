@@ -41,7 +41,7 @@ async fn main() -> anyhow::Result<()> {
 async fn serve_static_file(req: Request) -> impl IntoResponse {
     // Extract the wildcard part of the route
     let remainder = Remainder::from_request(&req);
-    
+
     let path = match remainder.get() {
         Some(p) if !p.is_empty() => p,
         _ => return (StatusCode::BAD_REQUEST, "Invalid file path").into_response(),
