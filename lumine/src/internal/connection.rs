@@ -68,32 +68,19 @@ pub async fn handle_connection<Rw: AsyncRead + AsyncWrite + Unpin>(
             }
         };
 
+        let should_close = framing.connection.is_close();
         let is_method_head = request.method() == Method::HEAD;
 
         let (mut parts, mut body) = dispatch::dispatch_request(request, &app).await.into_parts();
 
-        let headers_mut = &mut parts.headers;
-        headers_mut.reserve(8);
-
-        let should_close = framing.connection.is_close();
-
-        headers::set_headers(
-            headers_mut,
-            parts.status,
-            &mut body,
-            should_close,
-            is_method_head,
-        );
+        headers::set_headers(&mut parts, &mut body, should_close, is_method_head);
 
         let response = http::Response::from_parts(parts, body);
         if writer::write_response(response, &mut stream, timeouts)
             .await
             .is_err()
+            || should_close
         {
-            break;
-        }
-
-        if should_close {
             break;
         }
     }

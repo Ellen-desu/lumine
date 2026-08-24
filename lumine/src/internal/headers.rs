@@ -1,16 +1,20 @@
 use std::time::SystemTime;
 
-use http::{HeaderMap, HeaderValue, StatusCode, header};
+use http::{HeaderMap, HeaderValue, StatusCode, header, response::Parts};
 
 use crate::body::{Body, DynBody};
 
 pub fn set_headers(
-    headers: &mut HeaderMap,
-    status: StatusCode,
+    parts: &mut Parts,
     body: &mut DynBody,
     should_close: bool,
     is_method_head: bool,
 ) {
+    let headers = &mut parts.headers;
+    headers.reserve(8);
+
+    let status = parts.status;
+
     set_date(headers);
 
     set_default_security(headers);
