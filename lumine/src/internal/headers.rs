@@ -11,29 +11,11 @@ pub fn set_headers(
     should_close: bool,
     is_method_head: bool,
 ) {
-    headers.insert(
-        header::DATE,
-        httpdate::fmt_http_date(SystemTime::now())
-            .parse()
-            .expect("parse string to header should always work"),
-    );
+    set_date(headers);
 
-    // Browser compatibility: set X-Content-Type-Options to nosniff to prevent MIME type sniffing
-    headers.insert(
-        header::X_CONTENT_TYPE_OPTIONS,
-        HeaderValue::from_static("nosniff"),
-    );
+    set_default_security(headers);
 
-    // Browser compatibility: set Referrer-Policy to strict-origin-when-cross-origin to prevent leaking referrer information
-    headers.insert(
-        header::REFERRER_POLICY,
-        HeaderValue::from_static("strict-origin-when-cross-origin"),
-    );
-
-    headers.insert(
-        header::CONNECTION,
-        HeaderValue::from_static(if should_close { "close" } else { "keep-alive" }),
-    );
+    set_connection(headers, should_close);
 
     if status.is_informational() || status == StatusCode::NO_CONTENT {
         *body = Body::Empty;
@@ -52,7 +34,7 @@ pub fn set_headers(
                 headers.insert(header::CONTENT_LENGTH, bytes.len().into());
             }
 
-            insert_content_type(headers, "text/plain");
+            set_content_type(headers, "text/plain");
         }
         Body::Stream(stream) => {
             if let Some(length) = stream.size_hint()
@@ -72,7 +54,7 @@ pub fn set_headers(
                 });
             }
 
-            insert_content_type(headers, "application/octet-stream");
+            set_content_type(headers, "application/octet-stream");
         }
     }
 
@@ -87,11 +69,37 @@ pub fn set_headers(
     }
 }
 
-pub fn set_connection_close(headers: &mut HeaderMap) {
-    headers.insert(header::CONNECTION, HeaderValue::from_static("close"));
+pub fn set_connection(headers: &mut HeaderMap, close: bool) {
+    headers.insert(
+        header::CONNECTION,
+        HeaderValue::from_static(if close { "close" } else { "keep-alive" }),
+    );
 }
 
-fn insert_content_type(headers: &mut HeaderMap, default: &'static str) {
+pub fn set_default_security(headers: &mut HeaderMap) {
+    // Browser compatibility: set X-Content-Type-Options to nosniff to prevent MIME type sniffing
+    headers.insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+
+    // Browser compatibility: set Referrer-Policy to strict-origin-when-cross-origin to prevent leaking referrer information
+    headers.insert(
+        header::REFERRER_POLICY,
+        HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
+}
+
+pub fn set_date(headers: &mut HeaderMap) {
+    headers.insert(
+        header::DATE,
+        httpdate::fmt_http_date(SystemTime::now())
+            .parse()
+            .expect("parse string to header should always work"),
+    );
+}
+
+pub fn set_content_type(headers: &mut HeaderMap, default: &'static str) {
     headers
         .entry(header::CONTENT_TYPE)
         .or_insert(HeaderValue::from_static(default));

@@ -75,9 +75,7 @@ pub async fn handle_connection<Rw: AsyncRead + AsyncWrite + Unpin>(
         let headers_mut = &mut parts.headers;
         headers_mut.reserve(8);
 
-        let should_close = framing.connection.is_close()
-            || parts.status.is_server_error()
-            || parts.status.is_client_error();
+        let should_close = framing.connection.is_close();
 
         headers::set_headers(
             headers_mut,
