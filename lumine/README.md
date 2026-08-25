@@ -127,16 +127,6 @@ cargo run --example <example-name>
 
 ---
 
-## Project Status
-
-> ⚠️ Early Development
-
-Lumine is actively evolving and breaking changes may occur between releases.
-
-Feedback, issues, and contributions are welcome.
-
----
-
 ## License
 
 Licensed under the [MIT License](https://github.com/ouzuka-m/lumine/blob/main/LICENSE).
