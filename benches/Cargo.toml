@@ -10,8 +10,8 @@ license = "MIT"
 [dependencies]
 lumine = { version = "0", path = "../lumine"}
 criterion = { version = "0.8", features = ["async_tokio"] }
-rand = "0.9"
-tokio = { version = "1.52", features = ["rt-multi-thread"] }
+rand = "0.10"
+tokio = { version = "1.53", features = ["rt-multi-thread"] }
 
 [[bench]]
 name = "routing"
