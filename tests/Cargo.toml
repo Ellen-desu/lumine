@@ -8,9 +8,9 @@ edition = "2024"
 license = "MIT"
 
 [dependencies]
-http = "1.4"
+http = "1.5"
 lumine = { version = "0", path = "../lumine"}
-tokio = { version = "1.52", features = ["macros", "rt"] }
+tokio = { version = "1.53", features = ["macros", "rt"] }
 async-trait = "0.1"
 bytes = "1.12"
 
