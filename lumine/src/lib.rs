@@ -1,6 +1,6 @@
 #![doc(
-    html_logo_url = "https://raw.githubusercontent.com/Ellen-desu/lumine/refs/heads/main/assets/lumine.png",
-    html_favicon_url = "https://raw.githubusercontent.com/Ellen-desu/lumine/refs/heads/main/assets/lumine.png"
+    html_logo_url = "https://raw.githubusercontent.com/ouzuka-m/lumine/refs/heads/main/assets/lumine.png",
+    html_favicon_url = "https://raw.githubusercontent.com/ouzuka-m/lumine/refs/heads/main/assets/lumine.png"
 )]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![doc = include_str!("../README.md")]

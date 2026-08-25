@@ -189,4 +189,3 @@ impl<'a> IntoIterator for &'a Query {
         self.0.iter()
     }
 }
-

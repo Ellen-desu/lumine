@@ -1,3 +1,8 @@
+//! Header validation module.
+//!
+//! This module provides functionality to validate incoming HTTP request headers
+//! and extract necessary framing information such as `Content-Length` and `Connection`.
+
 use crate::{
     error::Error,
     internal::framing::{Connection, Framing},

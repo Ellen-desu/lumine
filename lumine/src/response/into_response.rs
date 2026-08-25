@@ -156,7 +156,7 @@ impl IntoResponse for Error {
         let mut response = http::Response::new(Body::Empty);
         *response.status_mut() = status;
 
-        headers::set_connection_close(response.headers_mut());
+        headers::set_connection(response.headers_mut(), true);
 
         response
     }

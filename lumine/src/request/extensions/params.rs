@@ -139,4 +139,3 @@ impl<'a> IntoIterator for &'a Params {
         self.0.iter()
     }
 }
-
