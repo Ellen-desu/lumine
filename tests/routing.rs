@@ -155,3 +155,26 @@ fn route_priority_static_vs_dynamic() {
         None => unreachable!(),
     }
 }
+
+#[test]
+fn advanced_route_extraction_multiple_params_and_wildcard() {
+    let app = Lumine::builder()
+        .route(
+            "/orgs/:orgId/teams/:teamId/members/:memberId/*",
+            async |_| (),
+        )
+        .build();
+
+    let result = app.get_route("/orgs/acme/teams/backend/members/alice/permissions/write");
+    assert!(result.is_some());
+
+    match result {
+        Some((_, params, remainder)) => {
+            assert_eq!(params.get("orgId"), Some("acme"));
+            assert_eq!(params.get("teamId"), Some("backend"));
+            assert_eq!(params.get("memberId"), Some("alice"));
+            assert_eq!(remainder.get(), Some("permissions/write"));
+        }
+        None => unreachable!(),
+    }
+}
