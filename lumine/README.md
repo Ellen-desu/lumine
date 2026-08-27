@@ -19,6 +19,7 @@ Lumine is designed to be:
 * **Fast** — Minimal overhead with efficient async I/O.
 * **Simple** — Small API surface and easy-to-follow architecture.
 * **Flexible** — Build applications without fighting framework abstractions.
+* **Correct** — Strictly follows HTTP/1.1 spec with proper headers, status codes, and edge-case handling.
 
 ---
 
