@@ -8,7 +8,7 @@ readme = "README.md"
 homepage = "https://ouzuka-m.github.io/lumine"
 documentation = "https://docs.rs/lumine/latest"
 repository = "https://github.com/ouzuka-m/lumine"
-categories = ["web-programming::http-server", "web-programming", "network-programming"]
+categories = ["web-programming::http-server", "web-programming", "network-programming", "parsing", "parser-implementations"]
 keywords = ["http", "web-server", "network", "lightweight", "async"]
 
 [dependencies]
