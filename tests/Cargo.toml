@@ -9,7 +9,7 @@ license = "MIT"
 
 [dependencies]
 http = "1.5"
-lumine = { version = "0", path = "../lumine"}
+lumine = { version = "0", path = "../lumine", features = ["filestream"] }
 tokio = { version = "1.53", features = ["macros", "rt"] }
 async-trait = "0.1"
 bytes = "1.12"
@@ -33,3 +33,15 @@ path = "reader.rs"
 [[test]]
 name = "writer"
 path = "writer.rs"
+
+[[test]]
+name = "response"
+path = "response.rs"
+
+[[test]]
+name = "filestream"
+path = "filestream.rs"
+
+[[test]]
+name = "server"
+path = "server.rs"

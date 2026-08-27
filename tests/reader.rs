@@ -101,3 +101,30 @@ async fn overflow_body() {
     let result = read_request(&mut reader, &Limits::default().max_body_size(1)).await;
     assert!(result.is_err());
 }
+
+#[tokio::test]
+async fn invalid_http_version() {
+    let raw = b"GET /hello HTTP/1.0\r\n\
+                 Host: localhost\r\n\
+                 \r\n";
+    let mut reader = BufReader::new(&raw[..]);
+    let result = read_request(&mut reader, &Limits::default()).await;
+    match result {
+        Err(lumine::error::Error::HttpVersionNotSupported) => {}
+        _ => panic!("Expected HttpVersionNotSupported"),
+    }
+}
+
+#[tokio::test]
+async fn uri_too_large() {
+    let raw = b"GET /verylonguri HTTP/1.1\r\n\
+                 Host: localhost\r\n\
+                 \r\n";
+    let mut reader = BufReader::new(&raw[..]);
+    let limits = Limits::default().max_path_size(5).max_query_size(1);
+    let result = read_request(&mut reader, &limits).await;
+    match result {
+        Err(lumine::error::Error::UriTooLarge) => {}
+        _ => panic!("Expected UriTooLarge, got: {:?}", result),
+    }
+}
