@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use lumine::{internal::reader::read_request, prelude::*};
+use lumine::{error::Error, internal::reader::read_request, prelude::*};
 use tokio::io::BufReader;
 
 #[tokio::test]
@@ -127,4 +127,84 @@ async fn uri_too_large() {
         Err(lumine::error::Error::UriTooLarge) => {}
         _ => panic!("Expected UriTooLarge, got: {:?}", result),
     }
+}
+#[tokio::test]
+async fn headers_crlf() {
+    let raw = b"GET / HTTP/1.1\r\n\
+                 Host: localhost\r\n\
+                 X-Test: hello\r\n\
+                 \r\n";
+
+    let mut reader = BufReader::new(&raw[..]);
+
+    let (request, _) = read_request(&mut reader, &Limits::default())
+        .await
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(request.headers().len(), 2);
+    assert_eq!(
+        request.headers().get("host"),
+        Some(&HeaderValue::from_static("localhost"))
+    );
+    assert_eq!(
+        request.headers().get("x-test"),
+        Some(&HeaderValue::from_static("hello"))
+    );
+}
+
+#[tokio::test]
+async fn headers_bare_lf() {
+    let raw = b"GET / HTTP/1.1\r\n\
+                 Host: localhost\n\
+                 X-Test: hello\r\n\
+                 \r\n";
+
+    let mut reader = BufReader::new(&raw[..]);
+
+    let result = read_request(&mut reader, &Limits::default()).await;
+
+    assert!(matches!(result, Err(Error::InvalidHeaders)));
+}
+
+#[tokio::test]
+async fn headers_bare_cr() {
+    let raw = b"GET / HTTP/1.1\r\n\
+                 Host: localhost\r\
+                 X-Test: hello\r\n\
+                 \r\n";
+
+    let mut reader = BufReader::new(&raw[..]);
+
+    let result = read_request(&mut reader, &Limits::default()).await;
+
+    assert!(matches!(result, Err(Error::InvalidHeaders)));
+}
+
+#[tokio::test]
+async fn headers_crcr() {
+    let raw = b"GET / HTTP/1.1\r\n\
+                 Host: localhost\r\r\
+                 X-Test: hello\r\n\
+                 \r\n";
+
+    let mut reader = BufReader::new(&raw[..]);
+
+    let result = read_request(&mut reader, &Limits::default()).await;
+
+    assert!(matches!(result, Err(Error::InvalidHeaders)));
+}
+
+#[tokio::test]
+async fn headers_lflf() {
+    let raw = b"GET / HTTP/1.1\r\n\
+                 Host: localhost\n\n\
+                 X-Test: hello\r\n\
+                 \r\n";
+
+    let mut reader = BufReader::new(&raw[..]);
+
+    let result = read_request(&mut reader, &Limits::default()).await;
+
+    assert!(matches!(result, Err(Error::InvalidHeaders)));
 }

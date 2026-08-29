@@ -93,20 +93,24 @@ pub async fn read_request<R: AsyncBufRead + Unpin>(
     let headers = {
         let mut headers = HeaderMap::with_capacity(8);
 
-        let headers_block = &buffer[(request_line_end + 2)..header_end];
+        let headers_block = &buffer[(request_line_end + 2)..header_end + 2];
         if headers_block.len() > limits.max_headers_size {
             return Err(Error::HeadersTooLarge);
         }
 
         let mut pairs = 0;
         for line in headers_block.split(|b| *b == b'\n') {
+            if line.is_empty() {
+                break;
+            }
+
             pairs += 1;
 
             if pairs > limits.max_headers_count {
                 return Err(Error::HeadersTooLarge);
             }
 
-            let line = line.strip_suffix(b"\r").unwrap_or(line);
+            let line = line.strip_suffix(b"\r").ok_or(Error::InvalidHeaders)?;
 
             let colon = memchr::memchr(b':', line).ok_or(Error::InvalidHeaders)?;
 
