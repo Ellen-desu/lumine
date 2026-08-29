@@ -66,15 +66,15 @@ pub async fn read_request<R: AsyncBufRead + Unpin>(
 
         let query = if let Some(query_str) = uri.query() {
             let mut query = Query::with_capacity(8);
-            let mut pairs = 0;
 
             if query_str.len() > limits.max_query_size {
                 return Err(Error::QueryTooLarge);
             }
 
-            for (key, value) in form_urlencoded::parse(query_str.as_bytes()).into_owned() {
-                pairs += 1;
-
+            for (pairs, (key, value)) in form_urlencoded::parse(query_str.as_bytes())
+                .into_owned()
+                .enumerate()
+            {
                 if pairs > limits.max_query_count {
                     return Err(Error::QueryTooLarge);
                 }
@@ -98,16 +98,9 @@ pub async fn read_request<R: AsyncBufRead + Unpin>(
             return Err(Error::HeadersTooLarge);
         }
 
-        let mut pairs = 0;
-        for line in headers_block.split(|b| *b == b'\n') {
+        for (pairs, line) in headers_block.split(|b| *b == b'\n').enumerate() {
             if line.is_empty() {
                 break;
-            }
-
-            pairs += 1;
-
-            if pairs > limits.max_headers_count {
-                return Err(Error::HeadersTooLarge);
             }
 
             let line = line.strip_suffix(b"\r").ok_or(Error::InvalidHeaders)?;
@@ -116,6 +109,10 @@ pub async fn read_request<R: AsyncBufRead + Unpin>(
 
             let key = HeaderName::from_bytes(&line[..colon])?;
             let value = HeaderValue::from_bytes(line[colon + 1..].trim_ascii())?;
+
+            if pairs >= limits.max_headers_count {
+                return Err(Error::HeadersTooLarge);
+            }
 
             headers.append(key, value);
         }
