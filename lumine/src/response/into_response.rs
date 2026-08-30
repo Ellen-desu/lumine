@@ -71,50 +71,10 @@ impl IntoResponse for () {
     }
 }
 
-impl<B> IntoResponse for (StatusCode, B)
-where
-    B: IntoBody,
-{
-    /// Returns a response with the given status code and body.
+impl IntoResponse for Response {
+    /// Returns the [`Response`] directly.
     fn into_response(self) -> Response {
-        let mut response = http::Response::new(self.1.into_body());
-        *response.status_mut() = self.0;
-        response
-    }
-}
-
-impl IntoResponse for (StatusCode, HeaderMap) {
-    /// Returns a response with the given status code and headers, with an empty body.
-    fn into_response(self) -> Response {
-        let mut response = http::Response::new(Body::Empty);
-        *response.status_mut() = self.0;
-        *response.headers_mut() = self.1;
-        response
-    }
-}
-
-impl<B> IntoResponse for (HeaderMap, B)
-where
-    B: IntoBody,
-{
-    /// Returns a response with the given headers and body, with a default 200 OK status code.
-    fn into_response(self) -> Response {
-        let mut response = http::Response::new(self.1.into_body());
-        *response.headers_mut() = self.0;
-        response
-    }
-}
-
-impl<B> IntoResponse for (StatusCode, HeaderMap, B)
-where
-    B: IntoBody,
-{
-    /// Returns a response with the given status code, headers, and body.
-    fn into_response(self) -> Response {
-        let mut response = http::Response::new(self.2.into_body());
-        *response.status_mut() = self.0;
-        *response.headers_mut() = self.1;
-        response
+        self
     }
 }
 
@@ -123,17 +83,8 @@ impl IntoResponse for StatusCode {
     fn into_response(self) -> Response {
         let mut response = http::Response::new(Body::Empty);
         *response.status_mut() = self;
-        response
-    }
-}
 
-impl<B> IntoResponse for B
-where
-    B: IntoBody,
-{
-    /// Returns a response with the given body, with a default 200 OK status code.
-    fn into_response(self) -> Response {
-        http::Response::new(self.into_body())
+        response
     }
 }
 
@@ -153,21 +104,12 @@ impl IntoResponse for Error {
             Error::RequestTimeout => StatusCode::REQUEST_TIMEOUT,
             Error::Unimplemented => StatusCode::NOT_IMPLEMENTED,
         };
-        let mut response = http::Response::new(Body::Empty);
-        *response.status_mut() = status;
 
-        let headers = response.headers_mut();
-        headers::set_date(headers);
-        headers::set_connection(headers, true);
+        let mut headers = HeaderMap::with_capacity(2);
+        headers::set_date(&mut headers);
+        headers::set_connection(&mut headers, true);
 
-        response
-    }
-}
-
-impl IntoResponse for Response {
-    /// Returns the [`Response`] directly.
-    fn into_response(self) -> Response {
-        self
+        (status, headers).into_response()
     }
 }
 
@@ -183,5 +125,66 @@ where
             Ok(value) => value.into_response(),
             Err(error) => error.into_response(),
         }
+    }
+}
+
+impl<B> IntoResponse for B
+where
+    B: IntoBody,
+{
+    /// Returns a response with the given body, with a default 200 OK status code.
+    fn into_response(self) -> Response {
+        http::Response::new(self.into_body())
+    }
+}
+
+impl<B> IntoResponse for (StatusCode, B)
+where
+    B: IntoBody,
+{
+    /// Returns a response with the given status code and body.
+    fn into_response(self) -> Response {
+        let mut response = http::Response::new(self.1.into_body());
+        *response.status_mut() = self.0;
+
+        response
+    }
+}
+
+impl IntoResponse for (StatusCode, HeaderMap) {
+    /// Returns a response with the given status code and headers, with an empty body.
+    fn into_response(self) -> Response {
+        let mut response = http::Response::new(Body::Empty);
+        *response.status_mut() = self.0;
+        *response.headers_mut() = self.1;
+
+        response
+    }
+}
+
+impl<B> IntoResponse for (HeaderMap, B)
+where
+    B: IntoBody,
+{
+    /// Returns a response with the given headers and body, with a default 200 OK status code.
+    fn into_response(self) -> Response {
+        let mut response = http::Response::new(self.1.into_body());
+        *response.headers_mut() = self.0;
+
+        response
+    }
+}
+
+impl<B> IntoResponse for (StatusCode, HeaderMap, B)
+where
+    B: IntoBody,
+{
+    /// Returns a response with the given status code, headers, and body.
+    fn into_response(self) -> Response {
+        let mut response = http::Response::new(self.2.into_body());
+        *response.status_mut() = self.0;
+        *response.headers_mut() = self.1;
+
+        response
     }
 }
