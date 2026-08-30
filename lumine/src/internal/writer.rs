@@ -6,6 +6,7 @@
 use crate::{application::Timeouts, body::Body, response::Response, stream::Stream};
 use bytes::{BufMut, BytesMut};
 use std::io::{Cursor, Write};
+use std::time::Duration;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 
 /// Writes an HTTP response to the provided TCP stream.
@@ -29,7 +30,6 @@ pub async fn write_response<W: AsyncWrite + Unpin>(
 
     // Headers
     for (name, value) in response.headers() {
-        // Write each header to the stream
         buffer.put_slice(name.as_str().as_bytes());
         buffer.put_slice(b": ");
         buffer.put_slice(value.as_bytes());
@@ -63,6 +63,35 @@ pub async fn write_response<W: AsyncWrite + Unpin>(
     Ok(())
 }
 
+/// Reads the next chunk from a stream with a timeout.
+///
+/// Returns `Some(n)` with the number of bytes read, or `None` on end-of-stream,
+/// error, or timeout.
+async fn read_next_chunk<S: Stream>(
+    stream: &mut S,
+    buffer: &mut [u8],
+    timeout: Duration,
+) -> Option<usize> {
+    match tokio::time::timeout(timeout, stream.next_chunk(buffer)).await {
+        Ok(Ok(0)) => None,
+        Ok(Ok(n)) => Some(n),
+        _ => None,
+    }
+}
+
+/// Writes data to the writer with a timeout.
+///
+/// Returns `true` on success, `false` on timeout or I/O error.
+async fn write_timed<W: AsyncWrite + Unpin>(
+    writer: &mut W,
+    data: &[u8],
+    timeout: Duration,
+) -> bool {
+    tokio::time::timeout(timeout, writer.write_all(data))
+        .await
+        .is_ok()
+}
+
 /// Writes a streaming body to the writer using chunked transfer encoding.
 pub async fn write_body_chunked<S: Stream, W: AsyncWrite + Unpin>(
     writer: &mut W,
@@ -72,41 +101,16 @@ pub async fn write_body_chunked<S: Stream, W: AsyncWrite + Unpin>(
 ) -> std::io::Result<()> {
     let mut chunk_header = [0u8; 32];
 
-    loop {
-        let n = match tokio::time::timeout(timeouts.stream_read, bytes_stream.next_chunk(buffer))
-            .await
-        {
-            Ok(Ok(0)) => break,
-            Ok(Ok(n)) => n,
-            _ => break,
-        };
-
+    while let Some(n) = read_next_chunk(bytes_stream, buffer, timeouts.stream_read).await {
         let len = {
             let mut cursor = Cursor::new(&mut chunk_header[..]);
             write!(cursor, "{:x}\r\n", n)?;
             cursor.position() as usize
         };
 
-        if tokio::time::timeout(
-            timeouts.response_write,
-            writer.write_all(&chunk_header[..len]),
-        )
-        .await
-        .is_err()
-        {
-            break;
-        }
-
-        if tokio::time::timeout(timeouts.response_write, writer.write_all(&buffer[..n]))
-            .await
-            .is_err()
-        {
-            break;
-        }
-
-        if tokio::time::timeout(timeouts.response_write, writer.write_all(b"\r\n"))
-            .await
-            .is_err()
+        if !write_timed(writer, &chunk_header[..len], timeouts.response_write).await
+            || !write_timed(writer, &buffer[..n], timeouts.response_write).await
+            || !write_timed(writer, b"\r\n", timeouts.response_write).await
         {
             break;
         }
@@ -124,19 +128,8 @@ pub async fn write_body_static<S: Stream, W: AsyncWrite + Unpin>(
     bytes_stream: &mut S,
     timeouts: &Timeouts,
 ) -> std::io::Result<()> {
-    loop {
-        let n = match tokio::time::timeout(timeouts.stream_read, bytes_stream.next_chunk(buffer))
-            .await
-        {
-            Ok(Ok(0)) => break,
-            Ok(Ok(n)) => n,
-            _ => break,
-        };
-
-        if tokio::time::timeout(timeouts.response_write, writer.write_all(&buffer[..n]))
-            .await
-            .is_err()
-        {
+    while let Some(n) = read_next_chunk(bytes_stream, buffer, timeouts.stream_read).await {
+        if !write_timed(writer, &buffer[..n], timeouts.response_write).await {
             break;
         }
     }
