@@ -24,36 +24,33 @@ pub fn set_headers(
     headers.reserve(8);
 
     let status = parts.status;
+    let no_body = status.is_informational()
+        || status == StatusCode::NO_CONTENT
+        || status == StatusCode::NOT_MODIFIED;
 
     set_date(headers);
-
     set_default_security(headers);
-
     set_connection(headers, should_close);
 
-    if status.is_informational() || status == StatusCode::NO_CONTENT {
+    if no_body {
         *body = Body::Empty;
+        headers.remove(header::TRANSFER_ENCODING);
+        headers.remove(header::CONTENT_LENGTH);
+        return;
     }
 
-    let not_modified = status == StatusCode::NOT_MODIFIED;
-
-    match &body {
+    match body {
         Body::Empty => {
-            if !not_modified {
-                headers.insert(header::CONTENT_LENGTH, 0.into());
-            }
+            headers.insert(header::CONTENT_LENGTH, 0.into());
         }
-        Body::Bytes(bytes) => {
-            if !not_modified {
-                headers.insert(header::CONTENT_LENGTH, bytes.len().into());
-            }
 
+        Body::Bytes(bytes) => {
+            headers.insert(header::CONTENT_LENGTH, bytes.len().into());
             set_content_type(headers, "text/plain");
         }
+
         Body::Stream(stream) => {
-            if let Some(length) = stream.size_hint()
-                && !not_modified
-            {
+            if let Some(length) = stream.size_hint() {
                 headers.insert(header::CONTENT_LENGTH, length.into());
             } else if !is_method_head {
                 headers.insert(
@@ -63,22 +60,17 @@ pub fn set_headers(
             }
 
             if let Some(hints) = stream.headers_hint() {
-                hints.iter().for_each(|(key, val)| {
-                    headers.entry(key).or_insert(val.clone());
-                });
+                for (key, value) in hints {
+                    headers.entry(key).or_insert(value.clone());
+                }
             }
 
             set_content_type(headers, "application/octet-stream");
         }
     }
 
-    if is_method_head || not_modified {
+    if is_method_head {
         headers.remove(header::TRANSFER_ENCODING);
-
-        if not_modified {
-            headers.remove(header::CONTENT_LENGTH);
-        }
-
         *body = Body::Empty;
     }
 }
